@@ -7,6 +7,8 @@ import { ApiError } from "@/lib/api"
 import { useReport } from "@/lib/report"
 import { useReportFilters, type ReportTab } from "@/lib/report-filters"
 import type { Scan } from "@/lib/scans"
+import { AiFixProvider } from "@/components/ai/fix-provider"
+import { AiSummaryCard } from "@/components/ai/summary-card"
 import { IssuesTab } from "./issues-tab"
 import { PassedTab } from "./passed-tab"
 import { ReportHeader } from "./report-header"
@@ -50,9 +52,11 @@ export default function ReportView({ scan }: { scan: Scan }) {
 
   return (
     <ViewerProvider>
+      <AiFixProvider report={report}>
       <div className="space-y-8">
         <ReportHeader report={report} />
         <ReportHero report={report} />
+        {report.counts.issues > 0 && <AiSummaryCard report={report} />}
         <Suspense fallback={<Skeleton className="h-80 w-full rounded-3xl" aria-hidden="true" />}>
           <ReportCharts report={report} />
         </Suspense>
@@ -68,6 +72,7 @@ export default function ReportView({ scan }: { scan: Scan }) {
           <TabsContent value="passed"><PassedTab report={report} /></TabsContent>
         </Tabs>
       </div>
+      </AiFixProvider>
     </ViewerProvider>
   )
 }

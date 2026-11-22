@@ -3,7 +3,7 @@ import { useVirtualizer } from "@tanstack/react-virtual"
 import { CircleCheck, Crosshair, Loader2, MapPinOff, RotateCw, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { useAiFixPanel } from "@/components/ai/fix-context"
 import { useMotionScale } from "@/lib/motion"
 import { useRuleNodes, type Marker, type ReportRule, type RuleNode } from "@/lib/report"
 import { SEVERITY } from "@/lib/severity"
@@ -39,6 +39,7 @@ function FailureChecklist({ summary }: { summary: string }) {
 
 function NodeRow({ node, marker, rule, index, total }: { node: RuleNode; marker: Marker | undefined; rule: ReportRule; index: number; total: number }) {
   const { selectedId, showOnPage } = useViewer()
+  const { openNode } = useAiFixPanel()
   const selected = selectedId === node.id
   const meta = SEVERITY[rule.impact]
   const label = `element ${index + 1} of ${total}`
@@ -69,14 +70,9 @@ function NodeRow({ node, marker, rule, index, total }: { node: RuleNode; marker:
         <Button variant="outline" size="sm" disabled={!marker} onClick={() => showOnPage(node.id)} aria-label={`Show on page: ${label}`}>
           <Crosshair aria-hidden="true" />Show on page
         </Button>
-        <Tooltip>
-          <TooltipTrigger
-            render={<Button variant="outline" size="sm" aria-disabled="true" onClick={(e) => e.preventDefault()} className="cursor-not-allowed opacity-70 hover:translate-y-0 hover:shadow-none" />}
-          >
-            <Sparkles aria-hidden="true" />AI fix
-          </TooltipTrigger>
-          <TooltipContent>Coming soon: AI-written fixes arrive in Phase 5</TooltipContent>
-        </Tooltip>
+        <Button variant="outline" size="sm" onClick={() => openNode(rule.id, node.id)} aria-label={`AI fix for ${label}`}>
+          <Sparkles aria-hidden="true" />AI fix
+        </Button>
       </div>
     </div>
   )

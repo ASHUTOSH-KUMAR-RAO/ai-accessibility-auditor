@@ -16,6 +16,8 @@ model User {
   updatedAt     DateTime       @updatedAt
   refreshTokens RefreshToken[]
   scans         Scan[]
+  aiUsage       AiUsage[]
+  aiFeedback    AiFixFeedback[]
 }
 
 /// Only the SHA-256 hash of a refresh token is stored. Tokens are single-use (rotated on every refresh).
@@ -93,6 +95,7 @@ model Scan {
   completedAt     DateTime?
   issues          Issue[]
   screenshot      ScanScreenshot?
+  aiSummary       AiSummary?
 
   @@index([userId, createdAt])
   @@index([userId, deletedAt, createdAt])
@@ -131,4 +134,60 @@ model ScanScreenshot {
   width  Int
   height Int
   bytes  Int
+}
+
+
+enum AiVerification {
+  VERIFIED
+  NOT_VERIFIED
+  NOT_APPLICABLE
+}
+
+/// Shared across scans and users: keyed by hash(rule + normalized html + failure summary + model + prompt version).
+/// The original HTML is deliberately NOT stored, only the generated fix.
+model AiFix {
+  id               String           @id @default(uuid()) @db.Uuid
+  cacheKey         String           @unique
+  ruleId           String
+  model            String
+  promptVersion    Int
+  /// true = rule-based "guided fix" (AI unavailable). Fallback rows are never served from cache.
+  fallback         Boolean
+  result           Json
+  verification     AiVerification
+  verificationNote String?
+  createdAt        DateTime         @default(now())
+  feedback         AiFixFeedback[]
+}
+
+model AiFixFeedback {
+  id        String   @id @default(uuid()) @db.Uuid
+  aiFixId   String   @db.Uuid
+  aiFix     AiFix    @relation(fields: [aiFixId], references: [id], onDelete: Cascade)
+  userId    String   @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  helpful   Boolean
+  reason    String?
+  createdAt DateTime @default(now())
+
+  @@unique([aiFixId, userId])
+}
+
+model AiSummary {
+  scanId    String   @id @db.Uuid
+  scan      Scan     @relation(fields: [scanId], references: [id], onDelete: Cascade)
+  result    Json
+  model     String
+  fallback  Boolean
+  createdAt DateTime @default(now())
+}
+
+/// One row per paid AI generation (cache hits are free); drives the per-user hourly limit.
+model AiUsage {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
 }

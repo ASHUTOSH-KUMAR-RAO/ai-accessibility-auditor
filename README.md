@@ -134,3 +134,16 @@ Client: `dev` · `build` · `preview` · `lint`
 Concept: *accessibility made visible* — a fixed Braille-cell texture (real 2×3 cells spelling "accessibility is a right not a feature…") over paper grain, warm paper / deep ink themes, amber accent only for actions and focus. Fraunces (display) + Atkinson Hyperlegible Next (body). Tokens live in `client/src/index.css`. Target: WCAG 2.2 AA in light and dark. Reduced-motion users get the same motion at lower intensity, never none.
 
 API responses always use `{ success, message, data, error }`.
+
+## Phase 5: AI fixes (Groq)
+
+- **Per-element fix** `POST /api/scans/:id/issues/:issueId/ai-fix` (JSON, or SSE with `Accept: text/event-stream` to stream the explanation): explanation, minimal HTML fix, CSS, React/JSX, how to fix / test, WCAG criteria, confidence.
+- **Verified fixes**: the fix is re-checked with axe for that one rule in an isolated, offline Chromium context (sanitised markup, CSP `default-src 'none'`, all requests aborted). Status: `VERIFIED`, `NOT_VERIFIED` (retried once with the smart model) or `NOT_APPLICABLE` (page-level rules).
+- **Contrast** colours are computed (WCAG formula), never chosen by the model.
+- **Guided fixes (no AI)** are used without a key, on timeout/429/invalid output, or when the hourly AI limit is reached.
+- **Scan summary** `GET|POST /api/scans/:id/ai-summary` (smart model, cached per scan; `{ "regenerate": true }` to redo).
+- **Safety**: page HTML is sent only as JSON data (never in instructions) after stripping scripts, handlers, `data:` URIs, input values and URL tokens; AI output is validated with zod, refused if it contains scripts/handlers, and rendered only as text (links only to w3.org / deque.com).
+- **Cache** (`AiFix`, shared across users) keyed by rule + normalised HTML + failure summary + model + prompt version. Per-user limit `AI_RATE_LIMIT_PER_HOUR` (cache hits are free), `AI_MAX_CONCURRENT` parallel calls.
+- Config: `GROQ_API_KEY`, `GROQ_MODEL_FAST` (default `openai/gpt-oss-20b`), `GROQ_MODEL_SMART` (`openai/gpt-oss-120b`), `AI_TIMEOUT_MS`. Leave the key empty for guided-only mode.
+
+Screenshots: `docs/screenshots/phase5-*.webp`.

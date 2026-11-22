@@ -31,6 +31,14 @@ export const schema = z
     SCAN_NAV_TIMEOUT_MS: z.coerce.number().int().min(1000).default(30_000),
     SCAN_TOTAL_TIMEOUT_MS: z.coerce.number().int().min(5000).default(60_000),
     SCAN_MAX_PAGE_BYTES: z.coerce.number().int().min(1_000_000).default(30_000_000),
+
+    // AI fixes (Groq). Without a key the app runs in guided-fix (rule-based) mode.
+    GROQ_API_KEY: z.string().optional().transform((v) => v?.trim() || undefined),
+    GROQ_MODEL_FAST: z.string().min(1).default("openai/gpt-oss-20b"),
+    GROQ_MODEL_SMART: z.string().min(1).default("openai/gpt-oss-120b"),
+    AI_TIMEOUT_MS: z.coerce.number().int().min(2000).default(25_000),
+    AI_RATE_LIMIT_PER_HOUR: z.coerce.number().int().min(1).default(30),
+    AI_MAX_CONCURRENT: z.coerce.number().int().min(1).max(16).default(4),
   })
   .refine((e) => e.JWT_ACCESS_SECRET !== e.JWT_REFRESH_SECRET, {
     path: ["JWT_REFRESH_SECRET"],

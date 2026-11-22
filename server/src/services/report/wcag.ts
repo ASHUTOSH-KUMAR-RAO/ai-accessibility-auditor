@@ -151,3 +151,11 @@ export function levelFor(tags: string[]): RuleLevel {
   if (tags.includes("wcag2aa") || tags.includes("wcag21aa") || tags.includes("wcag22aa")) return "AA"
   return "best-practice"
 }
+
+/** Known criteria for a list of ids ("1.4.3"); unknown ids are dropped. */
+export function criteriaByIds(ids: string[]): Criterion[] {
+  return [...new Set(ids)].flatMap((id) => {
+    const c = CRITERIA.get(id)
+    return c ? [c] : []
+  })
+}
