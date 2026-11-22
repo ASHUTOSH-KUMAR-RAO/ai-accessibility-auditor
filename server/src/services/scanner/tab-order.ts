@@ -7,6 +7,14 @@ export const TAB_MAX_STOPS = 100
 export const TAB_BUDGET_MS = 8_000
 /** Extra key presses allowed for focus travelling inside iframes (their contents are not readable) */
 const EXTRA_PRESSES = 40
+const STEP_TIMEOUT_MS = 3_000
+
+function withTimeout<T>(fn: () => Promise<T>, ms: number): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const t = setTimeout(() => reject(new Error("step timed out")), ms)
+    fn().then((v) => (clearTimeout(t), resolve(v)), (e) => (clearTimeout(t), reject(e)))
+  })
+}
 
 export interface TabStop {
   /** 1-based position in the tab sequence */
@@ -38,6 +46,8 @@ export interface TabOrder {
   complete: boolean
   /** Stopped at the stop limit */
   truncated: boolean
+  /** Ran out of time (slow page): the map is partial but still useful */
+  timedOut: boolean
   trap: { stop: number; selector: string } | null
   unreachable: Unreachable[]
   page: { width: number; height: number; viewportHeight: number }
@@ -195,6 +205,7 @@ export async function recordTabOrder(page: Page, opts: RecordOptions = {}): Prom
   const seen = new Map<string, number>()
   let complete = false
   let truncated = false
+  let timedOut = false
   let trap: TabOrder["trap"] = null
 
   await page.evaluate("window.__name = window.__name || ((f) => f)").catch(() => {}) // esbuild (tsx) wraps inner functions in __name()
@@ -209,11 +220,21 @@ export async function recordTabOrder(page: Page, opts: RecordOptions = {}): Prom
   const presses = maxStops + EXTRA_PRESSES
   for (let i = 0; i < presses; i++) {
     if (opts.signal?.aborted || Date.now() > deadline) {
-      truncated = true
+      timedOut = true
       break
     }
-    await page.keyboard.press("Tab")
-    const snap = await page.evaluate(inPageProbe)
+    // A slow or busy page must not stall the whole scan: every step has its own short deadline.
+    const left = Math.max(500, Math.min(STEP_TIMEOUT_MS, deadline - Date.now() + 500))
+    let snap: Snapshot
+    try {
+      snap = await withTimeout(async () => {
+        await page.keyboard.press("Tab")
+        return page.evaluate(inPageProbe)
+      }, left)
+    } catch {
+      timedOut = true // keep what we have
+      break
+    }
 
     if (snap.isBody) {
       if (stops.length === 0) {
@@ -259,19 +280,17 @@ export async function recordTabOrder(page: Page, opts: RecordOptions = {}): Prom
     }
   }
 
-  const dims = await page
-    .evaluate(() => ({ width: Math.max(document.documentElement.scrollWidth, innerWidth), height: Math.max(document.documentElement.scrollHeight, innerHeight), viewportHeight: innerHeight }))
-    .catch(() => ({ width: 0, height: 0, viewportHeight: 0 }))
+  const dims = await withTimeout(() => page.evaluate(() => ({ width: Math.max(document.documentElement.scrollWidth, innerWidth), height: Math.max(document.documentElement.scrollHeight, innerHeight), viewportHeight: innerHeight })), 2_000).catch(() => ({ width: 0, height: 0, viewportHeight: 0 }))
 
   // Interactive elements that never received focus (only meaningful when we saw the whole loop)
   let unreachable: Unreachable[] = []
-  if (complete && !trap) {
+  if (complete && !trap && !timedOut) {
     const reached = new Set(stops.map((s) => s.selector))
-    const candidates = await page.evaluate(inPageInteractive).catch(() => [] as Unreachable[])
+    const candidates = await withTimeout(() => page.evaluate(inPageInteractive), 2_000).catch(() => [] as Unreachable[])
     unreachable = candidates.filter((c) => !reached.has(c.selector) && !stops.some((s) => overlaps(s.box, c.box))).slice(0, 25)
   }
 
-  const order: TabOrder = { stops, complete, truncated, trap, unreachable, page: dims, warnings: [] }
+  const order: TabOrder = { stops, complete, truncated, timedOut, trap, unreachable, page: dims, warnings: [] }
   order.warnings = analyzeTabOrder(order)
   return order
 }

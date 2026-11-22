@@ -2,6 +2,7 @@ import type { Request } from "express"
 import { z } from "zod"
 import { compareScans, getSite, listSites } from "../services/compare/compare.service.js"
 import { exportIssues, toCsv } from "../services/export/export.service.js"
+import { getDashboard } from "../services/dashboard.service.js"
 import { getReportPdf } from "../services/pdf/pdf.service.js"
 import { prisma } from "../services/prisma.js"
 import { AppError } from "../utils/AppError.js"
@@ -30,6 +31,11 @@ export const compare = asyncHandler(async (req, res) => {
   const q = compareQuery.parse(req.query)
   res.setHeader("Cache-Control", "no-store")
   sendSuccess(res, await compareScans(userId(req), q.a, q.b))
+})
+
+export const dashboard = asyncHandler(async (req, res) => {
+  res.setHeader("Cache-Control", "no-store")
+  sendSuccess(res, await getDashboard(userId(req)))
 })
 
 export const sites = asyncHandler(async (req, res) => {

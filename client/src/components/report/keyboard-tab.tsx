@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react"
-import { ArrowUpDown, CircleSlash, Unplug, EyeOff, Keyboard, MapPinOff, Repeat, Target, TriangleAlert, type LucideIcon } from "lucide-react"
+import { ArrowUpDown, CircleSlash, Hourglass, Unplug, EyeOff, Keyboard, MapPinOff, Repeat, Target, TriangleAlert, type LucideIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useObjectUrl } from "@/lib/hooks"
@@ -115,13 +115,19 @@ export default function KeyboardTab({ report }: { report: Report }) {
   return (
     <div className="space-y-6">
       <h2 className="sr-only">Keyboard navigation</h2>
+      {order.timedOut && (
+        <p role="status" className="flex gap-2 rounded-2xl border-2 border-border bg-muted p-4 font-semibold">
+          <Hourglass className="mt-0.5 size-5 shrink-0" aria-hidden="true" />
+          Partial keyboard map (site was slow). We recorded {order.stops.length} {order.stops.length === 1 ? "stop" : "stops"} before time ran out, so later parts of the page aren't covered.
+        </p>
+      )}
       <section aria-labelledby="kb-summary" className="rounded-3xl border border-border bg-card/90 p-5 shadow-soft sm:p-6">
         <h3 id="kb-summary" className="font-display text-2xl font-semibold">
           {order.stops.length === 0 ? "Nothing on this page can take keyboard focus" : counts.length === 0 ? "Keyboard order looks healthy" : `${order.warnings.length} keyboard ${order.warnings.length === 1 ? "problem" : "problems"} found`}
         </h3>
         <p className="mt-1 text-muted-foreground">
           Pressing Tab moved focus through <strong className="text-foreground">{order.stops.length}</strong> {order.stops.length === 1 ? "stop" : "stops"}
-          {order.truncated ? ` (we stop recording at ${order.stops.length})` : order.complete ? " before leaving the page" : ""}.
+          {order.truncated ? ` (we stop recording at ${order.stops.length})` : order.timedOut ? " before time ran out" : order.complete ? " before leaving the page" : ""}.
         </p>
         {counts.length > 0 && (
           <ul className="mt-3 flex flex-wrap gap-2" aria-label="Problems by type">

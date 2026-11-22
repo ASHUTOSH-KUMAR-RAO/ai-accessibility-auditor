@@ -99,10 +99,11 @@ api.interceptors.response.use(
   },
 )
 
-/** Unwraps the envelope and returns `data`. */
+/** Unwraps the envelope and returns `data`. Static files (the built-in sample report) are plain JSON and come back as they are. */
 export async function get<T>(url: string): Promise<T> {
-  const res = await api.get<ApiEnvelope<T>>(url)
-  return res.data.data as T
+  const res = await api.get<ApiEnvelope<T> | T>(url)
+  const body = res.data as unknown
+  return (body !== null && typeof body === "object" && "success" in body && "data" in body ? (body as ApiEnvelope<T>).data : body) as T
 }
 
 export async function post<T>(url: string, body?: unknown): Promise<T> {

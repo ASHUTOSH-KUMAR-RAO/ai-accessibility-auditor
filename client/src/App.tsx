@@ -1,11 +1,12 @@
 import { lazy, Suspense } from "react"
 import { BrowserRouter, Route, Routes } from "react-router-dom"
 import { PageLoader, ProtectedRoute, PublicRoute } from "@/components/auth/route-guards"
+import { CookieNotice } from "@/components/cookie-notice"
 import { AppLayout } from "@/components/layout/app-layout"
-import { PLACEHOLDER_ROUTES } from "@/lib/nav"
+import { AppShell } from "@/components/layout/app-shell"
 
 // Route-level code splitting: each page (and its heavy deps) loads on demand.
-const Home = lazy(() => import("@/pages/home"))
+import Home from "@/pages/home" // the landing page is the first screen for most visitors: no extra request chain
 const Login = lazy(() => import("@/pages/login"))
 const Signup = lazy(() => import("@/pages/signup"))
 const Dashboard = lazy(() => import("@/pages/dashboard"))
@@ -17,7 +18,11 @@ const PublicReport = lazy(() => import("@/pages/public-report"))
 const History = lazy(() => import("@/pages/history"))
 const AuthLayout = lazy(() => import("@/components/auth/auth-layout").then((m) => ({ default: m.AuthLayout })))
 const NotFound = lazy(() => import("@/pages/simple-pages").then((m) => ({ default: m.NotFound })))
-const ComingSoon = lazy(() => import("@/pages/simple-pages").then((m) => ({ default: m.ComingSoon })))
+const Features = lazy(() => import("@/pages/features"))
+const SampleReport = lazy(() => import("@/pages/sample"))
+const Privacy = lazy(() => import("@/pages/legal").then((m) => ({ default: m.Privacy })))
+const Terms = lazy(() => import("@/pages/legal").then((m) => ({ default: m.Terms })))
+const Cookies = lazy(() => import("@/pages/legal").then((m) => ({ default: m.Cookies })))
 
 export default function App() {
   return (
@@ -35,9 +40,20 @@ export default function App() {
           {/* Shared reports: no account, no app chrome */}
           <Route path="/r/:token" element={<PublicReport />} />
 
+          {/* Public pages */}
           <Route element={<AppLayout />}>
             <Route index element={<Home />} />
-            <Route element={<ProtectedRoute />}>
+            <Route path="/features" element={<Features />} />
+            <Route path="/sample" element={<SampleReport />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/cookies" element={<Cookies />} />
+            <Route path="*" element={<NotFound />} />
+          </Route>
+
+          {/* Signed-in app: sidebar shell */}
+          <Route element={<ProtectedRoute />}>
+            <Route element={<AppShell />}>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/scans" element={<History />} />
               <Route path="/scans/:id" element={<ScanPage />} />
@@ -45,13 +61,10 @@ export default function App() {
               <Route path="/sites/:host" element={<SitePage />} />
               <Route path="/compare" element={<ComparePage />} />
             </Route>
-            {PLACEHOLDER_ROUTES.map((r) => (
-              <Route key={r.to} path={r.to} element={<ComingSoon />} />
-            ))}
-            <Route path="*" element={<NotFound />} />
           </Route>
         </Routes>
       </Suspense>
+      <CookieNotice />
     </BrowserRouter>
   )
 }

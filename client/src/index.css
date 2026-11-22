@@ -1,7 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
-@import "@fontsource-variable/fraunces/full.css";
+@import "@fontsource-variable/fraunces/soft.css";
 @import "@fontsource-variable/atkinson-hyperlegible-next";
 
 @custom-variant dark (&:is(.dark *));
@@ -183,12 +183,14 @@
 /* ───────────── Signature background: Braille cells + paper grain ─────────────
    One continuous layer spanning the full page height for the whole app. Real 2×3 Braille cells spelling
    "accessibility is a right not a feature…" — masked so colour follows the theme. */
-body { position: relative; }
+/* Fixed to the viewport (not the whole document height): the texture still runs seamlessly behind every section, but the
+   browser only has to mask and composite one screen of dots instead of thousands of pixels of page height. */
 body::before,
 body::after {
   content: "";
-  position: absolute;
+  position: fixed;
   inset: 0;
+  contain: strict;
   z-index: -1;
   pointer-events: none;
   background-color: var(--braille);
@@ -331,3 +333,32 @@ body::after {
 .diff-mark { text-align: center; font-weight: 700; user-select: none; }
 .diff-line[data-kind="add"] .diff-mark { color: var(--diff-add-mark); }
 .diff-line[data-kind="del"] .diff-mark { color: var(--diff-del-mark); }
+
+/* Drawer / panel surfaces get the same Braille texture as the page, so they never look like flat grey slabs */
+.surface-textured { position: relative; isolation: isolate; }
+.surface-textured::before {
+  content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; background-color: var(--braille); opacity: var(--braille-opacity);
+  -webkit-mask-image: url("./assets/braille.svg"); mask-image: url("./assets/braille.svg"); -webkit-mask-size: 192px 180px; mask-size: 192px 180px;
+}
+
+/* ───────────── Landing: tech-stack marquee (moves left to right; calmer, never stopped, for reduced motion) ───────────── */
+.marquee { overflow: hidden; }
+.marquee-track { animation: marquee-ltr 52s linear infinite; will-change: transform; }
+@keyframes marquee-ltr { from { transform: translateX(-50%); } to { transform: translateX(0); } }
+.marquee:hover .marquee-track,
+.marquee:focus-within .marquee-track,
+.marquee[data-paused] .marquee-track { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) { .marquee-track { animation-duration: 100s; } }
+
+/* Braille dots (see BrailleText): pop in in sequence, then breathe at slightly random offsets */
+.braille-on {
+  --breathe: 1.18;
+  animation: braille-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both, braille-breathe 1.6s ease-in-out infinite alternate;
+  animation-delay: calc(0.3s + var(--k) * 0.045s), calc(1.5s + var(--k) * 0.31s);
+  will-change: transform;
+}
+@keyframes braille-in { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes braille-breathe { to { transform: scale(var(--breathe)); } }
+@media (prefers-reduced-motion: reduce) {
+  .braille-on { --breathe: 1.07; animation-duration: 0.8s, 2.6s; }
+}

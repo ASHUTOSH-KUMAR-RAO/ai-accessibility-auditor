@@ -20,7 +20,7 @@ export default function ScanPage() {
   const completed = scan?.status === "COMPLETED"
 
   return (
-    <section className={`container-page py-10 sm:py-14 ${completed ? "max-w-[92rem]" : ""}`}>
+    <section className={`container-page py-10 sm:py-14 ${completed ? "min-h-[130dvh] max-w-[92rem]" : ""}`}>
       <Link to="/scans" className="mb-6 inline-flex items-center gap-2 rounded-lg py-1 font-medium text-link underline-offset-4 hover:underline">
         <ArrowLeft className="size-4" aria-hidden="true" />All scans
       </Link>

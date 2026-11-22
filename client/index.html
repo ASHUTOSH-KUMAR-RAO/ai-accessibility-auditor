@@ -2,7 +2,6 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <script>
       // Set the colour theme before first paint so there is no flash (the React ThemeProvider takes over afterwards)
@@ -12,13 +11,51 @@
         if (dark) document.documentElement.classList.add("dark");
       } catch (e) {}
     </script>
-    <title>AccessLens – AI Website Accessibility Auditor</title>
-    <meta name="description" content="Scan any website for WCAG accessibility problems. Get a score, plain-language explanations and AI-fixed code." />
+    <title>AccessLens: AI website accessibility auditor</title>
+    <meta name="description" content="Scan any website for WCAG accessibility problems. See exactly where they are, get plain-English explanations and AI-written fixes that are verified with axe-core." />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="%VITE_SITE_URL%/" />
+
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
     <meta name="theme-color" content="#faf5eb" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#15130f" media="(prefers-color-scheme: dark)" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="AccessLens" />
+    <meta property="og:title" content="AccessLens: AI website accessibility auditor" />
+    <meta property="og:description" content="Scan any website for WCAG accessibility problems. See exactly where they are, get plain-English explanations and AI-written fixes that are verified with axe-core." />
+    <meta property="og:url" content="%VITE_SITE_URL%/" />
+    <meta property="og:image" content="%VITE_SITE_URL%/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="AccessLens: Make the web usable for everyone, with an accessibility score card" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="AccessLens: AI website accessibility auditor" />
+    <meta name="twitter:description" content="Scan any website for WCAG accessibility problems. See exactly where they are, get plain-English explanations and AI-written fixes that are verified with axe-core." />
+    <meta name="twitter:image" content="%VITE_SITE_URL%/og-image.png" />
+    <meta name="twitter:image:alt" content="AccessLens: Make the web usable for everyone, with an accessibility score card" />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "AccessLens",
+        "applicationCategory": "DeveloperApplication",
+        "operatingSystem": "Web",
+        "url": "%VITE_SITE_URL%/",
+        "image": "%VITE_SITE_URL%/og-image.png",
+        "description": "AI website accessibility auditor: scans pages against WCAG 2.2, explains problems in plain English and writes fixes that are verified with axe-core.",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+        "featureList": ["WCAG 2.2 scanning with axe-core", "AI fixes verified by an automatic re-check", "Screenshot issue map", "Vision simulator", "Keyboard tab-order map", "PDF reports", "Share links", "Compare scans and track trends"]
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
+    <noscript>AccessLens needs JavaScript to run scans and show reports. It audits web pages for accessibility problems against WCAG 2.2.</noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

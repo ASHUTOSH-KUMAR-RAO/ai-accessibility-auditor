@@ -7,7 +7,7 @@ import { abortKind, ScanCancelled, ScanError } from "./errors.js"
 import { EGRESS_REFUSED_HEADER, startEgressProxy, type EgressStats } from "./egress-proxy.js"
 import type { StoredPassed, StoredReview } from "../report/types.js"
 import type { Guard } from "./ssrf.js"
-import { recordTabOrder, type TabOrder } from "./tab-order.js"
+import { recordTabOrder, TAB_BUDGET_MS, type TabOrder } from "./tab-order.js"
 
 export const STAGES = {
   check: "Checking URL",
@@ -85,6 +85,7 @@ function userAgent(version: string, viewport: keyof typeof VIEWPORTS) {
 
 export async function scanPage(opts: ScanPageOptions): Promise<PageScanResult> {
   const { url, viewport, signal, guard, onStage } = opts
+  const startedAt = Date.now()
   const kind0 = abortKind(signal)
   if (kind0) throw mapFailure(new Error("aborted"), freshState(), signal)
 
@@ -165,7 +166,9 @@ export async function scanPage(opts: ScanPageOptions): Promise<PageScanResult> {
     })
     const favicon = await fetchFavicon(page, context, guard)
     // Keyboard walk comes last: pressing Tab must not influence axe or the screenshot. It is best effort.
-    const tabOrder = await recordTabOrder(page, { signal }).catch((err) => {
+    // It gets its own time budget, always ending well before the scan's total timeout, so a slow site gives a partial map, not a failed scan.
+    const budgetMs = Math.max(1_000, Math.min(TAB_BUDGET_MS, startedAt + env.SCAN_TOTAL_TIMEOUT_MS - Date.now() - 8_000))
+    const tabOrder = await recordTabOrder(page, { signal, budgetMs }).catch((err) => {
       logger.warn("Keyboard recording failed; continuing without it", { reason: (err as Error).message })
       return null
     })

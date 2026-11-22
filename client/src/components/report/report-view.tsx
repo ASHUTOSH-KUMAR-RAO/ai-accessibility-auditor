@@ -45,7 +45,8 @@ export function ReportBody({ report, header }: { report: Report; header: ReactNo
           {header}
           <ReportHero report={report} />
           {report.counts.issues > 0 && <AiSummaryCard report={report} />}
-          <Suspense fallback={<Skeleton className="h-80 w-full rounded-3xl" aria-hidden="true" />}>
+          {/* the fallback is as tall as the finished charts, so nothing below jumps when they arrive */}
+          <Suspense fallback={<Skeleton className="h-[86rem] w-full rounded-3xl md:h-[70rem] lg:h-[47.5rem]" aria-hidden="true" />}>
             <ReportCharts report={report} />
           </Suspense>
 

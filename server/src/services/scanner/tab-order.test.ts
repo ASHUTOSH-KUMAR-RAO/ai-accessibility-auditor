@@ -14,11 +14,11 @@ after(async () => {
   await context.close()
   await closeBrowser()
 })
-const record = async (html: string, maxStops?: number): Promise<TabOrder> => {
+const record = async (html: string, maxStops?: number, budgetMs?: number): Promise<TabOrder> => {
   const page = await context.newPage() // fresh page: the sequential-focus starting point must not leak between tests
   try {
     await page.setContent(`<!doctype html><html lang="en"><head><title>t</title><style>body{margin:0}</style></head><body>${html}</body></html>`)
-    return await recordTabOrder(page, { maxStops })
+    return await recordTabOrder(page, { maxStops, budgetMs })
   } finally {
     await page.close()
   }
@@ -83,6 +83,16 @@ describe("recordTabOrder", () => {
     assert.equal(o.complete, true)
     assert.equal(o.unreachable.length, 0) // it IS reachable: that is not the problem
     assert.ok(o.warnings.some((w) => w.type === "focus-lost" && w.stop === 2), JSON.stringify(o.warnings))
+  })
+
+  it("returns a partial map instead of failing when the page is slow", async () => {
+    // every Tab press blocks the page for ~400 ms
+    const o = await record(`<a href="#a">One</a><a href="#b">Two</a><a href="#c">Three</a><a href="#d">Four</a><a href="#e">Five</a>
+      <script>addEventListener('keydown',()=>{const t=Date.now();while(Date.now()-t<400){}})</script>`, undefined, 900)
+    assert.equal(o.timedOut, true)
+    assert.ok(o.stops.length >= 1 && o.stops.length < 5, `stops: ${o.stops.length}`)
+    assert.equal(o.complete, false)
+    assert.equal(o.unreachable.length, 0) // never judged on a partial walk
   })
 
   it("respects the stop cap", async () => {

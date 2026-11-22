@@ -8,12 +8,12 @@ datasource db {
 }
 
 model User {
-  id            String         @id @default(uuid()) @db.Uuid
+  id            String          @id @default(uuid()) @db.Uuid
   name          String
-  email         String         @unique
+  email         String          @unique
   password      String
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
   refreshTokens RefreshToken[]
   scans         Scan[]
   aiUsage       AiUsage[]
@@ -55,31 +55,31 @@ enum Impact {
 }
 
 model Scan {
-  id              String      @id @default(uuid()) @db.Uuid
-  userId          String      @db.Uuid
-  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id              String          @id @default(uuid()) @db.Uuid
+  userId          String          @db.Uuid
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   url             String
   normalizedUrl   String
   /// hostname of normalizedUrl: groups scans by site
-  host            String      @default("")
+  host            String          @default("")
   finalUrl        String?
-  status          ScanStatus  @default(QUEUED)
-  progress        Int         @default(0)
+  status          ScanStatus      @default(QUEUED)
+  progress        Int             @default(0)
   stage           String?
   score           Int?
-  criticalCount   Int         @default(0)
-  seriousCount    Int         @default(0)
-  moderateCount   Int         @default(0)
-  minorCount      Int         @default(0)
-  passesCount     Int         @default(0)
-  incompleteCount Int         @default(0)
+  criticalCount   Int             @default(0)
+  seriousCount    Int             @default(0)
+  moderateCount   Int             @default(0)
+  minorCount      Int             @default(0)
+  passesCount     Int             @default(0)
+  incompleteCount Int             @default(0)
   pageTitle       String?
-  viewport        Viewport    @default(DESKTOP)
+  viewport        Viewport        @default(DESKTOP)
   durationMs      Int?
   errorCode       String?
   errorMessage    String?
   /// Queue bookkeeping: lets any instance detect scans orphaned by a crashed worker.
-  attempts        Int         @default(0)
+  attempts        Int             @default(0)
   heartbeatAt     DateTime?
   /// data: URI (<= ~16 KB) fetched through the egress proxy, so the browser never loads third-party favicons
   favicon         String?
@@ -87,14 +87,14 @@ model Scan {
   /// null for scans made before the report existed: the report is then derived from the stored Issue rows.
   rules           Json?
   /// axe "incomplete" results: needs manual review (capped sample of nodes per rule)
-  reviewItems     Json        @default("[]")
+  reviewItems     Json            @default("[]")
   /// axe passes: {id, help, tags}[]
-  passedRules     Json        @default("[]")
+  passedRules     Json            @default("[]")
   /// Soft delete: hidden everywhere, but the row still counts toward the hourly scan limit until purged.
   /// Keyboard tab-order recording (see services/scanner/tab-order.ts). null = scan predates it / recording failed.
   tabOrder        Json?
   deletedAt       DateTime?
-  createdAt       DateTime    @default(now())
+  createdAt       DateTime        @default(now())
   startedAt       DateTime?
   completedAt     DateTime?
   issues          Issue[]
@@ -143,7 +143,6 @@ model ScanScreenshot {
   bytes  Int
 }
 
-
 enum AiVerification {
   VERIFIED
   NOT_VERIFIED
@@ -153,8 +152,8 @@ enum AiVerification {
 /// Shared across scans and users: keyed by hash(rule + normalized html + failure summary + model + prompt version).
 /// The original HTML is deliberately NOT stored, only the generated fix.
 model AiFix {
-  id               String           @id @default(uuid()) @db.Uuid
-  cacheKey         String           @unique
+  id               String          @id @default(uuid()) @db.Uuid
+  cacheKey         String          @unique
   ruleId           String
   model            String
   promptVersion    Int
@@ -163,7 +162,7 @@ model AiFix {
   result           Json
   verification     AiVerification
   verificationNote String?
-  createdAt        DateTime         @default(now())
+  createdAt        DateTime        @default(now())
   feedback         AiFixFeedback[]
 }
 
@@ -191,10 +190,12 @@ model AiSummary {
 
 /// One row per paid AI generation (cache hits are free); drives the per-user hourly limit.
 model AiUsage {
-  id        String   @id @default(uuid()) @db.Uuid
-  userId    String   @db.Uuid
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
+  id           String          @id @default(uuid()) @db.Uuid
+  /// How the generated fix fared in the axe re-check (null until known / for summaries): drives "AI fixes verified"
+  verification AiVerification?
+  userId       String          @db.Uuid
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt    DateTime        @default(now())
 
   @@index([userId, createdAt])
 }

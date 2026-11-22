@@ -158,3 +158,13 @@ Screenshots: `docs/screenshots/phase5-*.webp`.
 - **Exports + badge**: `GET /api/scans/:id/export.csv|json?rules=` (CSV is formula-injection safe), `GET /api/badge/:token.svg` (works only while the link is active).
 
 Screenshots: `docs/screenshots/phase6-*.webp`. Client unit tests: `cd client && npm test`.
+
+## Phase 7A: landing, public pages, dashboard
+
+- **Landing** (`/`): animated scan mockup, sourced facts (WebAIM Million 2025, WHO), feature bento, a live vision-simulator demo, scroll-drawn "how it works", sample-report teaser, tech-stack marquee (left to right, pausable), FAQ and CTA. Signed-out visitors who scan are sent to sign-up and their URL is scanned right after (`accesslens:pending-url`).
+- **Sample report** (`/sample`): a frozen real report of W3C's inaccessible demo page, served as static files from `client/public/demo` (no login, no API). Regenerate with `cd server && npm run sample:export -- <scanId>`.
+- **Public pages**: `/features`, `/privacy`, `/terms`, `/cookies`, plus a non-blocking cookie notice.
+- **App shell**: collapsible sidebar (state remembered) and a mobile drawer around the dashboard, history, sites, report and compare pages. The dashboard shows stats, sites with sparklines, the most common issues and an empty state.
+- **Keyboard recording** now degrades gracefully: on a slow site the scan still completes and the Keyboard tab says "Partial keyboard map (site was slow)".
+- **Demo data**: `cd server && npm run seed:demo` creates `demo@accesslens.dev` (password `AccessLens-Demo-2026`) with 9 scans across 3 sites and cached AI fixes. It refuses to run in production without `--force`.
+- **SEO**: per-page title/description/canonical/Open Graph/Twitter tags, JSON-LD (SoftwareApplication), `robots.txt` and `sitemap.xml` generated at build from `VITE_SITE_URL`, favicon set, 1200×630 social card (`server/scripts/make-brand-assets.ts`).

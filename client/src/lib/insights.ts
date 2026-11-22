@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { api, ApiError, get, post } from "@/lib/api"
-import { scanBase, useReportSource } from "@/lib/report-source"
+import { sourceUrl, useReportSource } from "@/lib/report-source"
 import type { Severity } from "@/lib/severity"
 
 // ───────────── Keyboard tab order (mirror server/src/services/scanner/tab-order.ts) ─────────────
@@ -13,6 +13,8 @@ export interface TabOrder {
   stops: TabStop[]
   complete: boolean
   truncated: boolean
+  /** The site was slow: the map is partial */
+  timedOut?: boolean
   trap: { stop: number; selector: string } | null
   unreachable: Unreachable[]
   page: { width: number; height: number; viewportHeight: number }
@@ -20,11 +22,11 @@ export interface TabOrder {
 }
 
 export function useKeyboard(scanId: string) {
-  const base = scanBase(useReportSource(), scanId)
+  const source = useReportSource()
   return useQuery({
-    queryKey: ["scan", scanId, "keyboard", base],
+    queryKey: ["scan", scanId, "keyboard", source.base],
     staleTime: Infinity,
-    queryFn: () => get<{ available: boolean; tabOrder: TabOrder | null }>(`${base}/keyboard`),
+    queryFn: () => get<{ available: boolean; tabOrder: TabOrder | null }>(sourceUrl(source, scanId, "keyboard")),
   })
 }
 
@@ -109,3 +111,11 @@ export async function downloadFile(path: string, fallbackName: string) {
   a.remove()
   setTimeout(() => URL.revokeObjectURL(url), 10_000)
 }
+
+// ───────────── Dashboard ─────────────
+export interface DashboardData {
+  totals: { scans: number; completed: number; averageScore: number | null; sites: number; aiFixesVerified: number }
+  sites: Array<{ host: string; favicon: string | null; scanCount: number; latest: { id: string; score: number; createdAt: string }; previousScore: number | null; trend: number[] }>
+  topIssues: Array<{ ruleId: string; help: string; impact: Severity; scans: number; elements: number }>
+}
+export const useDashboard = () => useQuery({ queryKey: ["dashboard"], queryFn: () => get<DashboardData>("/dashboard"), staleTime: 30_000 })

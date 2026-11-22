@@ -166,6 +166,7 @@ export async function generateFix(userId: string, issue: FixIssue, opts: Generat
 
   opts.onGenerating?.()
   let outcome: Outcome | null = null
+  let usageId: string | null = null
   let reason: FallbackReason = null
   let rateLimit: FixResult["rateLimit"] = null
 
@@ -176,6 +177,7 @@ export async function generateFix(userId: string, issue: FixIssue, opts: Generat
       reason = "rate_limited"
       rateLimit = { limit: spent.limit, resetAt: spent.resetAt }
     } else {
+      usageId = spent.usageId
       try {
         outcome = await generateWithAi(issue, p, opts.signal, opts.onDelta)
       } catch (err) {
@@ -187,6 +189,7 @@ export async function generateFix(userId: string, issue: FixIssue, opts: Generat
     }
   }
   outcome ??= await generateGuided(issue, p)
+  if (usageId && outcome.source === "ai") await prisma.aiUsage.update({ where: { id: usageId }, data: { verification: outcome.verification.status } }).catch(() => {})
 
   const data = {
     ruleId: issue.ruleId,

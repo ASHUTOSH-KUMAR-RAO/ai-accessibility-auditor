@@ -39,7 +39,7 @@ export function AiSummaryCard({ report }: { report: Report }) {
   if (readOnly && !data) return null // a shared report only shows a summary that already exists
 
   return (
-    <section aria-labelledby="ai-summary-heading" aria-busy={busy} className="space-y-5 rounded-3xl border border-border bg-card/90 p-6 shadow-soft sm:p-8">
+    <section aria-labelledby="ai-summary-heading" aria-busy={busy} className={`space-y-5 rounded-3xl border border-border bg-card/90 p-6 shadow-soft sm:p-8 ${readOnly && stored.isPending ? "min-h-[111rem] md:min-h-[62rem] lg:min-h-[45rem]" : ""}`}>
       <div className="flex flex-wrap items-center gap-3">
         <div className="min-w-0 flex-1">
           <p className="eyebrow flex items-center gap-1.5"><Sparkle />AI summary</p>

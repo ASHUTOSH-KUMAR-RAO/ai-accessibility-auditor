@@ -19,7 +19,7 @@ export function HistoryRow({ scan, now, onRescan, onDelete, busy }: { scan: Scan
     /* keep empty */
   }
   return (
-    <li className="grid gap-4 rounded-2xl border border-border bg-card/85 p-4 shadow-soft transition-shadow hover:shadow-lift sm:p-5 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)_auto] lg:items-center">
+    <li className="grid grid-cols-[minmax(0,1fr)] gap-4 rounded-2xl border border-border bg-card/85 p-4 shadow-soft transition-shadow hover:shadow-lift sm:p-5 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)_auto] lg:items-center">
       <div className="min-w-0">
         <h3 className="truncate font-display text-xl font-semibold leading-snug">
           <Link to={`/scans/${scan.id}`} className="rounded outline-none hover:underline hover:underline-offset-4 focus-visible:underline">

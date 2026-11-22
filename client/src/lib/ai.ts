@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { ApiError, get, post, refreshAccessToken, type ApiEnvelope } from "@/lib/api"
 import type { Criterion } from "@/lib/report"
-import { scanBase, useReportSource } from "@/lib/report-source"
+import { scanBase, sourceUrl, useReportSource } from "@/lib/report-source"
 import { session } from "@/lib/session"
 
 // ───────────── Types (mirror server/src/services/ai) ─────────────
@@ -179,7 +179,7 @@ export function useAiFix(scanId: string, issueId: string | null) {
     setState({ status: "loading", text: "", generating: false })
     if (source.readOnly) {
       // Shared report: only fixes that were already saved. Nothing is generated, nothing costs anything.
-      get<{ fix: AiFix }>(`${source.base}/issues/${issueId}/ai-fix`)
+      get<{ fix: AiFix }>(sourceUrl(source, scanId, `issues/${issueId}/ai-fix`))
         .then(({ fix }) => {
           qc.setQueryData(ak.fix(issueId), fix)
           setState({ status: "done", fix, streamed: false })
@@ -228,12 +228,13 @@ export const useFixFeedback = (fixId: string) =>
 // ───────────── Summary ─────────────
 export function useAiSummary(scanId: string) {
   const qc = useQueryClient()
-  const base = scanBase(useReportSource(), scanId)
+  const source = useReportSource()
+  const base = scanBase(source, scanId)
   const stored = useQuery({
     queryKey: [...ak.summary(scanId), base],
     staleTime: Infinity,
     retry: false,
-    queryFn: async () => (await get<{ summary: AiSummary | null }>(`${base}/ai-summary`)).summary,
+    queryFn: async () => (await get<{ summary: AiSummary | null }>(sourceUrl(source, scanId, "ai-summary"))).summary,
   })
   const generate = useMutation({
     mutationFn: async (regenerate: boolean) => (await post<{ summary: AiSummary }>(`/scans/${scanId}/ai-summary`, { regenerate })).summary,
