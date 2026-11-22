@@ -13,3 +13,6 @@ Thumbs.db
 coverage/
 .vercel/
 server/src/generated/
+
+.*.err
+.*.log
