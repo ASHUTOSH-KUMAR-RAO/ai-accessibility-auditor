@@ -1,0 +1,222 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "@fontsource-variable/fraunces/full.css";
+@import "@fontsource-variable/atkinson-hyperlegible-next";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ───────────────────────── Design tokens ─────────────────────────
+   Concept: "accessibility made visible" — warm paper, deep ink, one amber accent.
+   Accent (amber) is reserved for primary actions, focus rings and key highlights. */
+@theme inline {
+  --font-display: "Fraunces Variable", Georgia, serif;
+  --font-sans: "Atkinson Hyperlegible Next Variable", system-ui, sans-serif;
+  --font-heading: var(--font-display);
+
+  /* Amber–orange scale (50–950) */
+  --color-amber-50: #fff8ec;
+  --color-amber-100: #ffefd0;
+  --color-amber-200: #ffdda0;
+  --color-amber-300: #ffc567;
+  --color-amber-400: #ffa82e;
+  --color-amber-500: #f58a0b;
+  --color-amber-600: #d96a05;
+  --color-amber-700: #b44d08;
+  --color-amber-800: #923d0e;
+  --color-amber-900: #77340f;
+  --color-amber-950: #441904;
+
+  /* Paper + ink (semantic) */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-link: var(--link);
+
+  /* Severity (never colour alone — always paired with icon + label) */
+  --color-critical: var(--critical);
+  --color-critical-soft: var(--critical-soft);
+  --color-serious: var(--serious);
+  --color-serious-soft: var(--serious-soft);
+  --color-moderate: var(--moderate);
+  --color-moderate-soft: var(--moderate-soft);
+  --color-minor: var(--minor);
+  --color-minor-soft: var(--minor-soft);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.4);
+
+  --shadow-soft: 0 1px 2px var(--shadow-c), 0 4px 12px -4px var(--shadow-c);
+  --shadow-lift: 0 2px 4px var(--shadow-c), 0 12px 28px -10px var(--shadow-c), 0 24px 48px -24px var(--shadow-c);
+  --shadow-glow: 0 0 0 1px color-mix(in oklab, var(--color-amber-500) 40%, transparent), 0 8px 24px -8px color-mix(in oklab, var(--color-amber-500) 55%, transparent);
+}
+
+:root {
+  --radius: 0.875rem;
+
+  /* Light — warm paper, deep ink */
+  --background: #faf5eb;
+  --foreground: #1d1a16;            /* 15.6:1 */
+  --card: #fffdf8;
+  --card-foreground: #1d1a16;
+  --popover: #fffdf8;
+  --popover-foreground: #1d1a16;
+  --primary: #f58a0b;               /* amber-500 */
+  --primary-foreground: #1d1a16;    /* 7.6:1 on amber-500 */
+  --secondary: #efe6d4;
+  --secondary-foreground: #1d1a16;
+  --muted: #f1e9d8;
+  --muted-foreground: #5c5448;      /* 6.9:1 */
+  --accent: #f1e9d8;                /* neutral hover surface, not amber */
+  --accent-foreground: #1d1a16;
+  --destructive: #a3123a;
+  --border: #ddd1bb;
+  --input: #8a7e6c;                 /* 3.6:1 — WCAG 1.4.11 */
+  --ring: #b44d08;                  /* amber-700, 5.1:1 on paper */
+  --link: #923d0e;                  /* amber-800, 7.1:1 */
+  --shadow-c: rgb(60 40 10 / 0.12);
+
+  --critical: #a3123a;  --critical-soft: #fbe3e9;
+  --serious: #6b3fa0;   --serious-soft: #ece4f6;
+  --moderate: #0b6bb5;  --moderate-soft: #dfeefa;
+  --minor: #4a6862;     --minor-soft: #e4ecea;
+
+  --braille: #1d1a16;   --braille-opacity: 0.09;
+  --grain-opacity: 0.07;
+}
+
+.dark {
+  /* Dark — deep ink, warm light text */
+  --background: #15130f;
+  --foreground: #f3ecdd;            /* 15.2:1 */
+  --card: #1e1b16;
+  --card-foreground: #f3ecdd;
+  --popover: #1e1b16;
+  --popover-foreground: #f3ecdd;
+  --primary: #f58a0b;
+  --primary-foreground: #1d1a16;
+  --secondary: #2a251d;
+  --secondary-foreground: #f3ecdd;
+  --muted: #241f18;
+  --muted-foreground: #b3a996;      /* 8.0:1 */
+  --accent: #2a251d;
+  --accent-foreground: #f3ecdd;
+  --destructive: #ff8fa9;
+  --border: #38322a;
+  --input: #7c725f;                 /* 3.9:1 */
+  --ring: #ffa82e;                  /* amber-400, 9.6:1 */
+  --link: #ffc567;                  /* amber-300 */
+  --shadow-c: rgb(0 0 0 / 0.45);
+
+  --critical: #ff8fa9;  --critical-soft: #3a1620;
+  --serious: #c9a8f5;   --serious-soft: #2b2040;
+  --moderate: #7cc0f2;  --moderate-soft: #14293a;
+  --minor: #9fc4bc;     --minor-soft: #1d2b28;
+
+  --braille: #f3ecdd;   --braille-opacity: 0.08;
+  --grain-opacity: 0.09;
+}
+
+@layer base {
+  * { @apply border-border; }
+
+  html {
+    @apply font-sans antialiased;
+    background-color: var(--background);
+    color-scheme: light;
+    scroll-behavior: smooth;
+  }
+  html.dark { color-scheme: dark; }
+
+  /* Body is transparent so the fixed texture layers sit between canvas and content */
+  body {
+    @apply text-foreground;
+    min-height: 100dvh;
+    font-size: 1.0625rem;
+    line-height: 1.65;
+    background: transparent;
+  }
+
+  h1, h2, h3, h4 {
+    font-family: var(--font-display);
+    font-variation-settings: "SOFT" 60, "WONK" 1;
+    letter-spacing: -0.015em;
+    line-height: 1.08;
+    text-wrap: balance;
+  }
+  p { text-wrap: pretty; }
+
+  /* Pointer affordances */
+  button, [role="button"], a[href], summary, select, label[for],
+  input:is([type="checkbox"], [type="radio"], [type="submit"], [type="button"]) { cursor: pointer; }
+  :disabled, [aria-disabled="true"], [data-disabled] { cursor: not-allowed; }
+
+  /* Focus: 3px solid ring with a gap — visible on any surface, both themes (WCAG 2.4.11 / 2.4.13) */
+  :focus-visible {
+    outline: 3px solid var(--ring);
+    outline-offset: 3px;
+    border-radius: var(--radius-sm);
+  }
+
+  ::selection { background: #ffc567; color: #1d1a16; }
+}
+
+/* ───────────── Signature background: Braille cells + paper grain ─────────────
+   One continuous layer spanning the full page height for the whole app. Real 2×3 Braille cells spelling
+   "accessibility is a right not a feature…" — masked so colour follows the theme. */
+body { position: relative; }
+body::before,
+body::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-color: var(--braille);
+}
+body::before {
+  opacity: var(--braille-opacity);
+  -webkit-mask-image: url("./assets/braille.svg");
+  mask-image: url("./assets/braille.svg");
+  -webkit-mask-size: 192px 180px;
+  mask-size: 192px 180px;
+}
+body::after {
+  opacity: var(--grain-opacity);
+  -webkit-mask-image: url("./assets/grain.svg");
+  mask-image: url("./assets/grain.svg");
+  -webkit-mask-size: 220px 220px;
+  mask-size: 220px 220px;
+}
+
+@layer components {
+  .container-page { @apply mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8; }
+  .eyebrow { @apply font-sans text-sm font-semibold uppercase tracking-[0.14em] text-link; }
+}
+
+/* Skip link (first tab stop) */
+.skip-link {
+  position: fixed; left: 1rem; top: -4rem; z-index: 100;
+  padding: 0.75rem 1.25rem; border-radius: var(--radius-md);
+  background: var(--foreground); color: var(--background); font-weight: 600;
+  transition: top 0.2s ease;
+}
+.skip-link:focus { top: 1rem; }
