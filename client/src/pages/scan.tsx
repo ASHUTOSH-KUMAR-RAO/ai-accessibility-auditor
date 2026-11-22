@@ -1,26 +1,28 @@
+import { lazy, Suspense } from "react"
 import { ArrowLeft, RotateCw, SearchX } from "lucide-react"
 import { Link, useParams } from "react-router-dom"
 import { ScanProblem } from "@/components/scans/scan-problem"
 import { ScanProgress } from "@/components/scans/scan-progress"
-import { ScanSummary } from "@/components/scans/scan-summary"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ApiError } from "@/lib/api"
 import { isActive, useScan } from "@/lib/scans"
 import { hostOf } from "@/lib/url"
 
-const TITLES = {
-  QUEUED: "Scanning", RUNNING: "Scanning", COMPLETED: "Results for", FAILED: "Couldn't scan", CANCELLED: "Cancelled scan of",
-} as const
+// The report (charts, viewer, syntax highlighter) only loads for finished scans
+const ReportView = lazy(() => import("@/components/report/report-view"))
+
+const TITLES = { QUEUED: "Scanning", RUNNING: "Scanning", FAILED: "Couldn't scan", CANCELLED: "Cancelled scan of" } as const
 
 export default function ScanPage() {
   const { id = "" } = useParams()
   const { data: scan, isPending, isError, error, refetch, isFetching } = useScan(id)
+  const completed = scan?.status === "COMPLETED"
 
   return (
-    <section className="container-page py-10 sm:py-14">
-      <Link to="/dashboard" className="mb-6 inline-flex items-center gap-2 rounded-lg py-1 font-medium text-link underline-offset-4 hover:underline">
-        <ArrowLeft className="size-4" aria-hidden="true" />Dashboard
+    <section className={`container-page py-10 sm:py-14 ${completed ? "max-w-[92rem]" : ""}`}>
+      <Link to="/scans" className="mb-6 inline-flex items-center gap-2 rounded-lg py-1 font-medium text-link underline-offset-4 hover:underline">
+        <ArrowLeft className="size-4" aria-hidden="true" />All scans
       </Link>
 
       {isPending && (
@@ -38,7 +40,7 @@ export default function ScanPage() {
             <>
               <h1 className="mt-4 font-display text-4xl font-semibold">Scan not found</h1>
               <p className="mt-2 text-muted-foreground">It may have been deleted, or it belongs to another account.</p>
-              <Link to="/dashboard" className={`${buttonVariants()} mt-6`}>Back to dashboard</Link>
+              <Link to="/scans" className={`${buttonVariants()} mt-6`}>Back to all scans</Link>
             </>
           ) : (
             <>
@@ -50,17 +52,20 @@ export default function ScanPage() {
         </div>
       )}
 
-      {scan && (
+      {scan && completed && (
+        <Suspense fallback={<div role="status"><span className="sr-only">Loading report…</span><Skeleton className="h-96 w-full rounded-3xl" /></div>}>
+          <ReportView scan={scan} />
+        </Suspense>
+      )}
+
+      {scan && !completed && (
         <>
           <h1 className="break-words font-display text-4xl font-semibold sm:text-5xl">
-            {TITLES[scan.status]} <span className="italic">{hostOf(scan.normalizedUrl)}</span>
+            {TITLES[scan.status as keyof typeof TITLES]} <span className="italic">{hostOf(scan.normalizedUrl)}</span>
           </h1>
-          <p role="status" className="sr-only">
-            {scan.status === "COMPLETED" ? `Scan complete. Score ${scan.score} out of 100.` : scan.status === "FAILED" ? "The scan failed." : scan.status === "CANCELLED" ? "The scan was cancelled." : ""}
-          </p>
+          <p role="status" className="sr-only">{scan.status === "FAILED" ? "The scan failed." : scan.status === "CANCELLED" ? "The scan was cancelled." : ""}</p>
           <div className="mt-8">
             {isActive(scan.status) && <ScanProgress scan={scan} />}
-            {scan.status === "COMPLETED" && <ScanSummary scan={scan} />}
             {(scan.status === "FAILED" || scan.status === "CANCELLED") && <ScanProblem scan={scan} />}
           </div>
         </>

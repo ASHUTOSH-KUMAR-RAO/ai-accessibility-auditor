@@ -1,9 +1,9 @@
+import type { Request } from "express"
+import * as scans from "../services/scan.service.js"
 import { AppError } from "../utils/AppError.js"
 import { asyncHandler } from "../utils/asyncHandler.js"
 import { sendSuccess } from "../utils/response.js"
-import * as scans from "../services/scan.service.js"
-import { createScanSchema, idParamSchema, listIssuesQuery, listScansQuery } from "../validators/scan.schemas.js"
-import type { Request } from "express"
+import { createScanSchema, idParamSchema, listIssuesQuery, listScansQuery, ruleNodesQuery, ruleParamSchema } from "../validators/scan.schemas.js"
 
 const userId = (req: Request) => {
   if (!req.user) throw new AppError("Authentication required", 401, "UNAUTHENTICATED")
@@ -16,13 +16,32 @@ export const create = asyncHandler(async (req, res) => {
   sendSuccess(res, { scan }, "Scan queued", 202)
 })
 
+export const rescan = asyncHandler(async (req, res) => {
+  sendSuccess(res, { scan: await scans.rescan(userId(req), scanId(req)) }, "Scan queued", 202)
+})
+
 export const list = asyncHandler(async (req, res) => {
   sendSuccess(res, await scans.listScans(userId(req), listScansQuery.parse(req.query)))
+})
+
+export const stats = asyncHandler(async (req, res) => {
+  res.setHeader("Cache-Control", "no-store")
+  sendSuccess(res, await scans.scanStats(userId(req)))
 })
 
 export const get = asyncHandler(async (req, res) => {
   res.setHeader("Cache-Control", "no-store")
   sendSuccess(res, { scan: await scans.getScan(userId(req), scanId(req)) })
+})
+
+export const report = asyncHandler(async (req, res) => {
+  res.setHeader("Cache-Control", "no-store")
+  sendSuccess(res, { report: await scans.getReport(userId(req), scanId(req)) })
+})
+
+export const ruleNodes = asyncHandler(async (req, res) => {
+  const { id, ruleId } = ruleParamSchema.parse(req.params)
+  sendSuccess(res, await scans.listRuleNodes(userId(req), id, ruleId, ruleNodesQuery.parse(req.query)))
 })
 
 export const issues = asyncHandler(async (req, res) => {

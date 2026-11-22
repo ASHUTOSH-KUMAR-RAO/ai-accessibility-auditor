@@ -41,6 +41,9 @@ export const STAGES = ["Checking URL", "Loading page", "Running accessibility ch
 
 export const scoreLabel = (score: number) => (score >= 90 ? "Excellent" : score >= 75 ? "Good" : score >= 50 ? "Needs work" : "Poor")
 
+/** Same thresholds as the server's report grade (server/src/services/report/grade.ts). */
+export const gradeFor = (score: number) => (score >= 90 ? "A" : score >= 80 ? "B" : score >= 70 ? "C" : score >= 60 ? "D" : "F")
+
 export const isActive = (s: ScanStatus) => s === "QUEUED" || s === "RUNNING"
 
 export const qk = {

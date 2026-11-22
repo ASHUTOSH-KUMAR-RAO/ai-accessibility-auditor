@@ -143,7 +143,7 @@ describe("reading, cancelling and deleting", () => {
 
   it("rejects malformed ids", async () => assert.equal((await call("/scans/not-a-uuid", A.token)).status, 400))
 
-  it("cancel: QUEUED → CANCELLED, repeat → 409; delete refuses active scans but removes finished ones", async () => {
+  it("cancel: QUEUED → CANCELLED, repeat → 409; delete refuses active scans but hides finished ones", async () => {
     await prisma.scan.deleteMany({ where: { userId: A.id, status: { not: "COMPLETED" } } })
     const queued = (await post("/scans", A.token, { url: "https://example.com/c" }).then((r) => r.json())).data.scan.id
     assert.equal((await call(`/scans/${queued}`, A.token, { method: "DELETE" })).status, 409)
@@ -154,6 +154,7 @@ describe("reading, cancelling and deleting", () => {
     assert.equal((await call(`/scans/${queued}`, A.token, { method: "DELETE" })).status, 200)
     assert.equal((await call(`/scans/${queued}`, A.token)).status, 404)
     assert.equal((await call(`/scans/${scanId}`, A.token, { method: "DELETE" })).status, 200)
-    assert.equal(await prisma.issue.count({ where: { scanId } }), 0, "issues cascade")
+    const row = await prisma.scan.findUnique({ where: { id: scanId } })
+    assert.ok(row?.deletedAt, "soft delete: the row is kept (so the hourly limit cannot be reset) but hidden from the API")
   })
 })

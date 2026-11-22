@@ -8,15 +8,10 @@ import { abortKind, ScanCancelled, ScanError } from "./scanner/errors.js"
 import { calculateScore } from "./scanner/score.js"
 import { scanPage, STAGES, type AxeRuleResult } from "./scanner/scan-page.js"
 import { defaultGuard, type Guard } from "./scanner/ssrf.js"
+import type { StoredRule } from "./report/types.js"
+import { criterionIds } from "./report/wcag.js"
 
 const MAX_ISSUES = 1500
-
-/** "wcag143" → "1.4.3", "wcag2411" → "2.4.11". Level tags like "wcag2aa" don't match. */
-export const wcagCriteria = (tags: string[]) =>
-  tags.flatMap((t) => {
-    const m = /^wcag(\d)(\d)(\d{1,2})$/.exec(t)
-    return m ? [`${m[1]}.${m[2]}.${m[3]}`] : []
-  })
 
 const impactEnum = (i: AxeRuleResult["impact"]) => i.toUpperCase() as "CRITICAL" | "SERIOUS" | "MODERATE" | "MINOR"
 
@@ -51,7 +46,7 @@ export async function runScan(scan: ClaimedScan, parentSignal: AbortSignal, guar
           ruleId: r.id,
           impact: impactEnum(r.impact),
           wcagTags: r.tags,
-          wcagCriteria: wcagCriteria(r.tags),
+          wcagCriteria: criterionIds(r.tags),
           help: r.help,
           description: r.description,
           helpUrl: r.helpUrl,
@@ -63,6 +58,14 @@ export async function runScan(scan: ClaimedScan, parentSignal: AbortSignal, guar
         })),
       )
       .slice(0, MAX_ISSUES)
+
+    // Per-rule summary with TRUE totals (the Issue rows are only a capped sample)
+    const storedByRule = new Map<string, number>()
+    for (const i of issues) storedByRule.set(i.ruleId, (storedByRule.get(i.ruleId) ?? 0) + 1)
+    const ruleSummaries: StoredRule[] = page.rules.map((r) => ({
+      id: r.id, impact: r.impact, help: r.help, description: r.description, helpUrl: r.helpUrl, tags: r.tags,
+      totalNodes: r.totalNodes, storedNodes: storedByRule.get(r.id) ?? 0,
+    }))
 
     await prisma.$transaction(
       async (tx) => {
@@ -81,6 +84,10 @@ export async function runScan(scan: ClaimedScan, parentSignal: AbortSignal, guar
             incompleteCount: page.incompleteCount,
             pageTitle: page.pageTitle || null,
             finalUrl: page.finalUrl,
+            favicon: page.favicon,
+            rules: ruleSummaries,
+            reviewItems: page.review,
+            passedRules: page.passed,
             durationMs: Date.now() - started,
             completedAt: new Date(),
           },

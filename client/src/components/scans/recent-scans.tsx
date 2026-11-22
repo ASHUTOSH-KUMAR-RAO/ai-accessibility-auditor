@@ -1,5 +1,6 @@
 import { History, Monitor, RotateCw, Smartphone } from "lucide-react"
 import { Link } from "react-router-dom"
+import { buttonVariants } from "@/components/ui/button"
 import { motion } from "framer-motion"
 import { StatusChip } from "@/components/scans/status-chip"
 import { Button } from "@/components/ui/button"
@@ -55,7 +56,10 @@ export function RecentScans() {
 
   return (
     <section aria-labelledby="recent-title" className="mt-12">
-      <h2 id="recent-title" className="flex items-center gap-2.5 font-display text-3xl font-semibold"><History className="size-6" aria-hidden="true" />Recent scans</h2>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 id="recent-title" className="flex items-center gap-2.5 font-display text-3xl font-semibold"><History className="size-6" aria-hidden="true" />Recent scans</h2>
+        <Link to="/scans" className={buttonVariants({ variant: "outline", size: "sm" })}>View all scans</Link>
+      </div>
 
       <div className="mt-5">
         {isPending && (

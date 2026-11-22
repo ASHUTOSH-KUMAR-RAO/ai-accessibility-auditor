@@ -5,6 +5,7 @@ import { logger } from "../../utils/logger.js"
 import { getBrowser } from "./browser.js"
 import { abortKind, ScanCancelled, ScanError } from "./errors.js"
 import { EGRESS_REFUSED_HEADER, startEgressProxy, type EgressStats } from "./egress-proxy.js"
+import type { StoredPassed, StoredReview } from "../report/types.js"
 import type { Guard } from "./ssrf.js"
 
 export const STAGES = {
@@ -42,6 +43,12 @@ export interface PageScanResult {
   passesCount: number
   incompleteCount: number
   screenshot: { data: Buffer; mime: string; width: number; height: number } | null
+  /** data: URI of the page icon, fetched through the egress proxy (null if none / too big / blocked) */
+  favicon: string | null
+  /** axe "incomplete": needs a human look */
+  review: StoredReview[]
+  /** axe passes (id + help only) */
+  passed: StoredPassed[]
   blockedRequests: number
 }
 
@@ -138,11 +145,13 @@ export async function scanPage(opts: ScanPageOptions): Promise<PageScanResult> {
     await onStage(50, STAGES.axe)
     const axe = await new AxeBuilder({ page })
       .withTags(AXE_TAGS)
-      .options({ resultTypes: ["violations"] }) // passes/incomplete come back as cheap one-node summaries
+      .options({ resultTypes: ["violations", "incomplete"] }) // passes come back as cheap one-node summaries
       .analyze()
     assertHealthy(state, page)
 
     const rules = await collectRules(page, axe.violations)
+    const review = collectReview(axe.incomplete)
+    const passed = axe.passes.map((p) => ({ id: p.id, help: p.help, tags: p.tags }))
     await onStage(75, STAGES.axe)
 
     // ── Screenshot ──
@@ -151,6 +160,7 @@ export async function scanPage(opts: ScanPageOptions): Promise<PageScanResult> {
       logger.warn("Screenshot failed; continuing without it", { reason: (err as Error).message })
       return null
     })
+    const favicon = await fetchFavicon(page, context, guard)
     await onStage(90, STAGES.shot)
 
     assertHealthy(state, page)
@@ -161,6 +171,9 @@ export async function scanPage(opts: ScanPageOptions): Promise<PageScanResult> {
       passesCount: axe.passes.length,
       incompleteCount: axe.incomplete.length,
       screenshot,
+      favicon,
+      review,
+      passed,
       blockedRequests: state.blockedRequests,
     }
   } catch (err) {
@@ -233,6 +246,51 @@ function attachPageGuards(page: Page, context: BrowserContext, state: RunState) 
 }
 
 type AxeViolation = Awaited<ReturnType<AxeBuilder["analyze"]>>["violations"][number]
+
+const MAX_REVIEW_NODES = 10
+const FAVICON_MAX_BYTES = 16 * 1024
+const FAVICON_TYPES = /^image\/(png|jpeg|gif|webp|x-icon|vnd\.microsoft\.icon|svg\+xml)$/
+
+function collectReview(incomplete: AxeViolation[]): StoredReview[] {
+  return incomplete.map((v) => ({
+    id: v.id,
+    impact: (v.impact ?? null) as StoredReview["impact"],
+    help: v.help,
+    description: v.description,
+    helpUrl: v.helpUrl,
+    tags: v.tags,
+    totalNodes: v.nodes.length,
+    nodes: v.nodes.slice(0, MAX_REVIEW_NODES).map((n) => ({
+      selector: n.target.flat(2).join(" ").slice(0, 300),
+      html: n.html.slice(0, 400),
+      message: (n.any[0]?.message ?? n.all[0]?.message ?? n.none[0]?.message ?? "").slice(0, 300),
+    })),
+  }))
+}
+
+/**
+ * The favicon is fetched here, through the same egress proxy as everything else (context.request honours the
+ * context proxy), then inlined as a small data: URI. The viewer's browser never contacts the scanned site.
+ */
+async function fetchFavicon(page: Page, context: BrowserContext, guard: Guard): Promise<string | null> {
+  try {
+    const href = await page.evaluate(() => {
+      const link = document.querySelector<HTMLLinkElement>('link[rel~="icon" i]')
+      return link?.href || new URL("/favicon.ico", location.href).href
+    })
+    const url = new URL(href)
+    await guard.assertPublicUrl(url)
+    const res = await context.request.get(url.href, { timeout: 5_000, maxRedirects: 2, failOnStatusCode: false })
+    if (res.status() !== 200) return null
+    const type = (res.headers()["content-type"] ?? "").split(";")[0]!.trim().toLowerCase()
+    if (!FAVICON_TYPES.test(type)) return null
+    const body = await res.body()
+    if (body.length === 0 || body.length > FAVICON_MAX_BYTES) return null
+    return `data:${type};base64,${body.toString("base64")}`
+  } catch {
+    return null
+  }
+}
 
 async function collectRules(page: Page, violations: AxeViolation[]): Promise<AxeRuleResult[]> {
   const order = { critical: 0, serious: 1, moderate: 2, minor: 3 } as const

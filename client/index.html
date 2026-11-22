@@ -4,6 +4,14 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      // Set the colour theme before first paint so there is no flash (the React ThemeProvider takes over afterwards)
+      try {
+        var t = localStorage.getItem("theme");
+        var dark = t === "dark" || (t !== "light" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+        if (dark) document.documentElement.classList.add("dark");
+      } catch (e) {}
+    </script>
     <title>AccessLens – AI Website Accessibility Auditor</title>
     <meta name="description" content="Scan any website for WCAG accessibility problems. Get a score, plain-language explanations and AI-fixed code." />
     <meta name="theme-color" content="#faf5eb" media="(prefers-color-scheme: light)" />

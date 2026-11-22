@@ -1,4 +1,4 @@
-import { LayoutDashboard, LogOut } from "lucide-react"
+import { History, LayoutDashboard, LogOut } from "lucide-react"
 import { Link } from "react-router-dom"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
@@ -27,6 +27,7 @@ export function UserMenu({ user }: { user: User }) {
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem render={<Link to="/dashboard" />}><LayoutDashboard aria-hidden="true" />Dashboard</DropdownMenuItem>
+        <DropdownMenuItem render={<Link to="/scans" />}><History aria-hidden="true" />All scans</DropdownMenuItem>
         <DropdownMenuItem onClick={() => void signOut()}><LogOut aria-hidden="true" />Log out</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "shadcn/tailwind.css";
 @import "@fontsource-variable/fraunces/full.css";
 @import "@fontsource-variable/atkinson-hyperlegible-next";
 
@@ -220,3 +221,64 @@ body::after {
   transition: top 0.2s ease;
 }
 .skip-link:focus { top: 1rem; }
+
+/* ───────────── Report: severity marks, patterns, code colours ─────────────
+   Severity mark colours are the Okabe–Ito-derived set validated for colour-blind separation
+   (adjacent-pair CVD ΔE ≥ 8, normal-vision ΔE ≥ 15, ≥ 3:1 on the card surface) in BOTH themes.
+   Text never wears these: labels use ink, the colour lives in marks (icons, borders, bars, outlines).
+   Colour is never the only channel either: every severity also has an icon, a label and a fill pattern. */
+@theme inline {
+  --color-sev-critical: var(--sev-critical);
+  --color-sev-serious: var(--sev-serious);
+  --color-sev-moderate: var(--sev-moderate);
+  --color-sev-minor: var(--sev-minor);
+}
+
+:root {
+  --sev-critical: #d55e00;
+  --sev-serious: #cc79a7;
+  --sev-moderate: #0072b2;
+  --sev-minor: #009e73;
+
+  --code-bg: #f4ecda;
+  --code-tag: #8c2f0a;
+  --code-attr: #0b5a8f;
+  --code-value: #0a6a4a;
+  --code-punct: #5c5448;
+  --code-comment: #6b6254;
+}
+
+.dark {
+  --sev-serious: #c777a5;
+
+  --code-bg: #100e0b;
+  --code-tag: #ff9d6e;
+  --code-attr: #7cc0f2;
+  --code-value: #8fd9b0;
+  --code-punct: #b3a996;
+  --code-comment: #a09680;
+}
+
+/* Fill patterns: the second channel after colour (use with --c set to the severity colour) */
+.pat-critical { background-image: repeating-linear-gradient(45deg, var(--c) 0 3px, transparent 3px 8px); }
+.pat-serious { background-image: radial-gradient(var(--c) 1.5px, transparent 1.7px); background-size: 7px 7px; }
+.pat-moderate { background-image: repeating-linear-gradient(0deg, var(--c) 0 2px, transparent 2px 7px); }
+.pat-minor { background-image: repeating-linear-gradient(135deg, var(--c) 0 1.5px, transparent 1.5px 10px); }
+
+/* Highlight pulse for "Show on page". Reduced-motion users get the same pulse at a smaller radius, never none. */
+@keyframes pulse-ring {
+  0% { box-shadow: 0 0 0 0 var(--pulse-color, currentColor); }
+  100% { box-shadow: 0 0 0 var(--pulse-size, 16px) transparent; }
+}
+.pulse { animation: pulse-ring 1.1s ease-out 3; }
+@media (prefers-reduced-motion: reduce) {
+  :root { --pulse-size: 7px; }
+  .pulse { animation-duration: 1.6s; }
+}
+
+/* Syntax tokens (rendered as React elements from Prism tokens, never as injected HTML) */
+.tok-tag { color: var(--code-tag); }
+.tok-attr-name { color: var(--code-attr); }
+.tok-attr-value, .tok-string { color: var(--code-value); }
+.tok-punctuation, .tok-equals { color: var(--code-punct); }
+.tok-comment { color: var(--code-comment); font-style: italic; }

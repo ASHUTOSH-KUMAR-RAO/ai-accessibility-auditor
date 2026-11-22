@@ -5,7 +5,7 @@ import { AppError } from "../utils/AppError.js"
 import { logger } from "../utils/logger.js"
 import { verifyAccessToken } from "./token.service.js"
 
-export type ScanEvent = "scan:queued" | "scan:progress" | "scan:completed" | "scan:failed" | "scan:cancelled"
+export type ScanEvent = "scan:queued" | "scan:progress" | "scan:completed" | "scan:failed" | "scan:cancelled" | "scan:deleted"
 
 let io: Server | null = null
 

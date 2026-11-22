@@ -2,6 +2,7 @@ import { motion } from "framer-motion"
 import { Mail, ScanSearch } from "lucide-react"
 import { useSearchParams } from "react-router-dom"
 import { BrailleText } from "@/components/brand/braille-text"
+import { StatsCards } from "@/components/dashboard/stats-cards"
 import { RecentScans } from "@/components/scans/recent-scans"
 import { ScanForm } from "@/components/scans/scan-form"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -25,7 +26,9 @@ export default function Dashboard() {
         <p className="mt-3 max-w-xl text-lg text-muted-foreground">Scan a website and watch the audit happen, step by step.</p>
       </motion.div>
 
-      <div className="mt-10 grid items-start gap-6 lg:grid-cols-[1.7fr_1fr]">
+      <div className="mt-10"><StatsCards /></div>
+
+      <div className="mt-6 grid items-start gap-6 lg:grid-cols-[1.7fr_1fr]">
         <Card className="rounded-3xl border border-border bg-card/90 p-2 shadow-soft ring-0">
           <CardHeader>
             <CardTitle className="flex items-center gap-2.5 font-display text-2xl"><ScanSearch className="size-6" aria-hidden="true" />Scan a website</CardTitle>

@@ -2,12 +2,13 @@
 
 Enter any URL → scan for WCAG problems → get a score, plain-language explanations and AI-fixed code.
 
-**Status: Phase 3 — scan engine.** Sign in, scan a public website for WCAG problems and watch the progress live. The full results report (Phase 4) and AI fixes (Phase 5) come next.
+**Status: Phase 4 — the report.** Sign in, scan a public website, watch the progress live, then read a full accessibility report: score and grade, charts, every issue with WCAG criteria and who it affects, and a screenshot viewer that shows each problem on the page. AI-written fixes (Phase 5) and PDF/share/compare (Phase 6) come next.
 
 | | |
 |---|---|
 | Client | React 19 · Vite · TypeScript · Tailwind v4 · shadcn/ui · Framer Motion · GSAP · TanStack Query |
 | Server | Node · Express 5 · TypeScript · zod · Playwright + axe-core · Socket.io |
+| Report UI | TanStack Query + Virtual · Prism (lazy) · hand-built accessible bar charts (no chart library) · Framer Motion · GSAP |
 | Database | PostgreSQL (local Docker → Supabase) · Prisma 7 |
 | Deploy | Vercel (client) · Railway (server) |
 
@@ -103,6 +104,19 @@ Client: `dev` · `build` · `preview` · `lint`
 
 **Crash safety.** Running scans heartbeat every 3 s. Scans whose heartbeat is older than 30 s are re-queued (once more), then failed. SIGTERM stops claiming, lets running scans finish for 10 s, then hands them back to the queue.
 
+## The report (Phase 4)
+
+**API** (all owner-scoped; soft-deleted scans are invisible):
+- `GET /api/scans/:id/report`: summary + grade, severity / WCAG principle / level breakdowns, rules grouped with WCAG criteria (names + W3C links), "who is affected", true affected-element totals, needs-review and passed lists, and the screenshot markers (numbered boxes).
+- `GET /api/scans/:id/rules/:ruleId/nodes`: a rule's affected elements (cursor-paginated). `POST /api/scans/:id/rescan`. `GET /api/scans` now takes `q, status, viewport, minScore, maxScore, sort=date|score, order`. `GET /api/scans/stats`.
+- **Grade:** A ≥ 90, B ≥ 80, C ≥ 70, D ≥ 60, otherwise F (`services/report/grade.ts`). **Level** comes from axe's own tags (A, AA, else best-practice); **principle** from the first WCAG criterion of the rule. "Who is affected" is a maintained map (`audiences.ts`) with a fallback from axe's category tags.
+- **Soft delete:** `deletedAt`. A deleted scan disappears at once but its row still counts toward the hourly limit; rows are purged after 7 days. Scans made before Phase 4 still open (rules are rebuilt from the stored Issue rows and flagged "saved sample").
+- Favicons are fetched by the scanner **through the egress proxy** and inlined as a small `data:` URI, so the viewer's browser never contacts the scanned site.
+
+**Severity colours** are checked with the dataviz skill's validator, not by eye: the four marks (`#d55e00 #cc79a7 #0072b2 #009e73`; dark theme uses `#c777a5` for serious) pass colour-blind separation (adjacent ΔE ≥ 8), the normal-vision floor (≥ 15) and ≥ 3:1 on the card surface in both themes. Text never wears them: labels are ink; the colour lives in icons, outlines and bars. Every severity also has its own icon and fill pattern.
+
+**Screenshot viewer:** boxes + numbered markers per affected element (colour, icon shape and outline/fill pattern per severity). "Show on page" zooms and pulses the element; clicking a marker (or Enter) opens its issue. Markers use a roving tabindex (Tab once, then arrow keys / Home / End); `+` `-` `0` zoom the focused viewer. Desktop: sticky side panel. Mobile: full-height bottom sheet.
+
 ## Deploy
 
 - **Vercel**: root directory `client`, framework Vite; `vercel.json` rewrites all routes to the SPA. Add a rewrite **before** the SPA fallback so `/api/*` reaches Railway and cookies stay first-party:
@@ -113,7 +127,7 @@ Client: `dev` · `build` · `preview` · `lint`
   ] }
   ```
   Set `CLIENT_URL` on Railway to the Vercel origin (it is also the CSRF allow-list) and `TRUST_PROXY=1`.
-- **Railway**: root directory `server`; `railway.json` builds `server/Dockerfile` (official Playwright image `v1.65.1`, **keep `PW_VERSION` in the Dockerfile equal to the pinned `playwright` version**), runs as non-root `pwuser`, applies `prisma migrate deploy`, then `exec`s node under `tini` so SIGTERM reaches the app. Health check: `/api/health`. Set the server env vars above. **Memory:** Chromium needs headroom: plan for ~1 GB for the default `SCAN_CONCURRENCY=2` (≈ 400–500 MB per concurrent scan + the API). Use 2 GB if you raise concurrency. Several instances are safe (jobs are claimed with `SKIP LOCKED`).
+- **Railway**: root directory `server`; `railway.json` builds `server/Dockerfile`: a slim **Chromium-only** image (`node:22-bookworm-slim` + the headless shell and its OS libraries, installed by the same pinned Playwright version the app uses, so nothing to keep in sync; ~1.7 GB vs 4.8 GB for the official all-browsers image). It runs as the non-root `node` user, applies `prisma migrate deploy`, then `exec`s node under `tini` so SIGTERM reaches the app. Health check: `/api/health`. Set the server env vars above. **Memory:** Chromium needs headroom: plan for ~1 GB for the default `SCAN_CONCURRENCY=2` (≈ 400–500 MB per concurrent scan + the API). Use 2 GB if you raise concurrency. Several instances are safe (jobs are claimed with `SKIP LOCKED`).
 
 ## Design system
 

@@ -4,6 +4,7 @@ import { env } from "./config/env.js"
 import { connectDb, prisma } from "./services/prisma.js"
 import { closeRealtime, initRealtime } from "./services/realtime.js"
 import { closeBrowser } from "./services/scanner/browser.js"
+import { purgeDeletedScans } from "./services/scan.service.js"
 import { scanWorker } from "./services/scan-worker.js"
 import { logger } from "./utils/logger.js"
 
@@ -15,6 +16,11 @@ server.listen(env.PORT, () => logger.info("API listening", { port: env.PORT, env
 connectDb()
   .then(() => (env.SCAN_WORKER_ENABLED ? scanWorker.start() : undefined))
   .catch((err) => logger.error("Database unavailable at startup", { err }))
+
+// Soft-deleted scans are hard-deleted after a week (checked at boot and every 6 h)
+const purge = () => void purgeDeletedScans().then((n) => n && logger.info("Purged deleted scans", { count: n })).catch((err) => logger.warn("Purge failed", { err }))
+purge()
+setInterval(purge, 6 * 60 * 60 * 1000).unref()
 
 let closing = false
 async function shutdown(signal: string) {

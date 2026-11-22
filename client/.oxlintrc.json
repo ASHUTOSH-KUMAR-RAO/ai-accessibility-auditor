@@ -25,6 +25,15 @@
         "react/only-export-components": "off",
         "jsx-a11y/label-has-associated-control": "off"
       }
+    },
+    {
+      "files": [
+        "src/components/report/**"
+      ],
+      "rules": {
+        "jsx-a11y/no-noninteractive-tabindex": "off",
+        "jsx-a11y/no-noninteractive-element-interactions": "off"
+      }
     }
   ]
 }

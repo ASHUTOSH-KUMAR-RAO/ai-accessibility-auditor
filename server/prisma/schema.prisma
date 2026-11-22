@@ -77,6 +77,17 @@ model Scan {
   /// Queue bookkeeping: lets any instance detect scans orphaned by a crashed worker.
   attempts        Int         @default(0)
   heartbeatAt     DateTime?
+  /// data: URI (<= ~16 KB) fetched through the egress proxy, so the browser never loads third-party favicons
+  favicon         String?
+  /// Per-rule summary incl. TRUE affected-element totals ({id, impact, help, description, helpUrl, tags, totalNodes, storedNodes}[]).
+  /// null for scans made before the report existed: the report is then derived from the stored Issue rows.
+  rules           Json?
+  /// axe "incomplete" results: needs manual review (capped sample of nodes per rule)
+  reviewItems     Json        @default("[]")
+  /// axe passes: {id, help, tags}[]
+  passedRules     Json        @default("[]")
+  /// Soft delete: hidden everywhere, but the row still counts toward the hourly scan limit until purged.
+  deletedAt       DateTime?
   createdAt       DateTime    @default(now())
   startedAt       DateTime?
   completedAt     DateTime?
@@ -84,6 +95,7 @@ model Scan {
   screenshot      ScanScreenshot?
 
   @@index([userId, createdAt])
+  @@index([userId, deletedAt, createdAt])
   @@index([status, createdAt])
 }
 

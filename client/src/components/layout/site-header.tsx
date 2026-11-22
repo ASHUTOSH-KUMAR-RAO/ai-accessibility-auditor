@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { Link, NavLink } from "react-router-dom"
-import { LayoutDashboard, LogOut, Menu } from "lucide-react"
+import { History, LayoutDashboard, LogOut, Menu } from "lucide-react"
 import { Logo } from "@/components/brand/logo"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { UserMenu } from "@/components/layout/user-menu"
@@ -72,6 +72,11 @@ export function SiteHeader() {
                 {user && (
                   <NavLink to="/dashboard" onClick={close} className={(s) => cn(navLink(s), "flex items-center gap-2 py-3 text-lg")}>
                     <LayoutDashboard className="size-5" aria-hidden="true" />Dashboard
+                  </NavLink>
+                )}
+                {user && (
+                  <NavLink to="/scans" end onClick={close} className={(s) => cn(navLink(s), "flex items-center gap-2 py-3 text-lg")}>
+                    <History className="size-5" aria-hidden="true" />All scans
                   </NavLink>
                 )}
                 {PRODUCT_LINKS.map((l) => (

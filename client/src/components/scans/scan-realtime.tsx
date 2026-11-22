@@ -1,6 +1,7 @@
 import { useEffect } from "react"
 import { useQueryClient, type QueryClient } from "@tanstack/react-query"
 import { useAuth } from "@/context/auth-store"
+import { rk } from "@/lib/report"
 import { qk, type Scan, type ScanPage, type ScanProgress } from "@/lib/scans"
 import { connectScanSocket, disconnectScanSocket } from "@/lib/socket"
 
@@ -26,9 +27,20 @@ export function ScanRealtime() {
       void qc.invalidateQueries({ queryKey: ["scan"] })
       void qc.invalidateQueries({ queryKey: ["scans"] })
     })
-    socket.on("scan:queued", (scan: Scan) => applyUpdate(qc, scan, true))
+    // Anything that changes what history / stats show: refetch those (cheap, and filters are applied server-side)
+    const refreshLists = () => {
+      void qc.invalidateQueries({ queryKey: ["history"] })
+      void qc.invalidateQueries({ queryKey: rk.stats })
+    }
+    socket.on("scan:queued", (scan: Scan) => { applyUpdate(qc, scan, true); refreshLists() })
     socket.on("scan:progress", (p: ScanProgress) => applyUpdate(qc, p))
-    for (const event of ["scan:completed", "scan:failed", "scan:cancelled"]) socket.on(event, (scan: Scan) => applyUpdate(qc, scan, true))
+    for (const event of ["scan:completed", "scan:failed", "scan:cancelled"]) socket.on(event, (scan: Scan) => { applyUpdate(qc, scan, true); refreshLists() })
+    // deleted in another tab/device: drop it here too
+    socket.on("scan:deleted", ({ id }: { id: string }) => {
+      qc.removeQueries({ queryKey: qk.scan(id) })
+      qc.setQueryData<ScanPage>(qk.recent, (old) => (old ? { ...old, items: old.items.filter((s) => s.id !== id) } : old))
+      refreshLists()
+    })
     return disconnectScanSocket
   }, [status, qc])
 
