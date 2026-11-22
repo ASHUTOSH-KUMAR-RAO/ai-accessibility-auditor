@@ -1,37 +1,30 @@
 import { useId, useState, type FormEvent } from "react"
 import { ArrowRight, Globe } from "lucide-react"
-import { toast } from "sonner"
+import { useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { checkUrlInput } from "@/lib/url"
 
-/** Accepts "example.com" or a full URL; returns a normalised http(s) URL or null. */
-function normalise(raw: string): URL | null {
-  const value = raw.trim()
-  if (!value) return null
-  try {
-    const url = new URL(/^https?:\/\//i.test(value) ? value : `https://${value}`)
-    return url.hostname.includes(".") ? url : null
-  } catch {
-    return null
-  }
-}
-
-/** Phase 1 mock: validates and acknowledges. The real scan is wired in the scanner phase. */
+/**
+ * Landing-page entry: validates the address, then hands it to the dashboard scan form
+ * (/dashboard?url=…). Signed-out visitors are sent through login first and land there afterwards.
+ */
 export function UrlForm() {
   const [value, setValue] = useState("")
   const [error, setError] = useState<string | null>(null)
+  const navigate = useNavigate()
   const inputId = useId()
   const errorId = `${inputId}-error`
 
   const onSubmit = (e: FormEvent) => {
     e.preventDefault()
-    const url = normalise(value)
-    if (!url) {
-      setError("Enter a full website address, like example.com")
+    const check = checkUrlInput(value)
+    if (!check.ok) {
+      setError(check.message)
       return
     }
     setError(null)
-    toast.info(`Scanner coming soon`, { description: `${url.hostname} is ready to scan once the scanner phase ships.` })
+    navigate(`/dashboard?url=${encodeURIComponent(check.url)}`)
   }
 
   return (
@@ -45,6 +38,8 @@ export function UrlForm() {
             type="text"
             inputMode="url"
             autoComplete="url"
+            autoCapitalize="none"
+            spellCheck={false}
             placeholder="https://your-site.com"
             value={value}
             onChange={(e) => setValue(e.target.value)}

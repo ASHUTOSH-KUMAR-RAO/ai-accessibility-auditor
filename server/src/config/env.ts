@@ -22,6 +22,15 @@ export const schema = z
     JWT_ACCESS_EXPIRES: z.string().regex(/^\d+[smh]$/, "use a form like 15m").default("15m"),
     JWT_REFRESH_EXPIRES_DAYS: z.coerce.number().int().min(1).max(90).default(7),
     COOKIE_SAMESITE: z.enum(["lax", "strict", "none"]).default("lax"),
+
+    // Scan engine
+    SCAN_WORKER_ENABLED: z.enum(["true", "false"]).default("true").transform((v) => v === "true"),
+    SCAN_CONCURRENCY: z.coerce.number().int().min(1).max(8).default(2),
+    SCAN_RATE_LIMIT_PER_HOUR: z.coerce.number().int().min(1).default(10),
+    SCAN_MAX_ACTIVE_PER_USER: z.coerce.number().int().min(1).default(2),
+    SCAN_NAV_TIMEOUT_MS: z.coerce.number().int().min(1000).default(30_000),
+    SCAN_TOTAL_TIMEOUT_MS: z.coerce.number().int().min(5000).default(60_000),
+    SCAN_MAX_PAGE_BYTES: z.coerce.number().int().min(1_000_000).default(30_000_000),
   })
   .refine((e) => e.JWT_ACCESS_SECRET !== e.JWT_REFRESH_SECRET, {
     path: ["JWT_REFRESH_SECRET"],

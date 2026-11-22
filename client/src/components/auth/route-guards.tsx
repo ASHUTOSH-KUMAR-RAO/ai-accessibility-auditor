@@ -17,7 +17,7 @@ export function ProtectedRoute() {
   const { status } = useAuth()
   const location = useLocation()
   if (status === "loading") return <PageLoader label="Checking your session…" />
-  if (status === "anonymous") return <Navigate to="/login" replace state={{ from: location.pathname }} />
+  if (status === "anonymous") return <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />
   return <Outlet />
 }
 

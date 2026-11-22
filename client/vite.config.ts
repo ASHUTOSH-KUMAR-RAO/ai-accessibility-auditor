@@ -26,7 +26,10 @@ export default defineConfig({
   server: {
     // Mirrors the production Vercel rewrite: the browser only ever talks to its own origin,
     // so the refresh cookie is first-party in dev and prod alike.
-    proxy: { '/api': { target: 'http://localhost:4000' } },
+    proxy: {
+      '/api': { target: 'http://localhost:4000' },
+      '/socket.io': { target: 'http://localhost:4000', ws: true }, // live scan progress
+    },
   },
 })
 

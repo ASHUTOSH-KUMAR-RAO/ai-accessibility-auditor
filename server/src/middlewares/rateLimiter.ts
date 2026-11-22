@@ -6,7 +6,7 @@ const handler = (message: string) => (_req: unknown, res: Parameters<typeof send
 
 export const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  limit: 300,
+  limit: 1000,
   standardHeaders: "draft-8",
   legacyHeaders: false,
   handler: handler("Too many requests. Please slow down and try again shortly."),
@@ -29,3 +29,4 @@ export const registerLimiter = rateLimit({
   legacyHeaders: false,
   handler: handler("Too many accounts created from this network. Try again later."),
 })
+

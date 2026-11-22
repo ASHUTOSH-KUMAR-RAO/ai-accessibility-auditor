@@ -9,6 +9,7 @@ const Home = lazy(() => import("@/pages/home"))
 const Login = lazy(() => import("@/pages/login"))
 const Signup = lazy(() => import("@/pages/signup"))
 const Dashboard = lazy(() => import("@/pages/dashboard"))
+const ScanPage = lazy(() => import("@/pages/scan"))
 const AuthLayout = lazy(() => import("@/components/auth/auth-layout").then((m) => ({ default: m.AuthLayout })))
 const NotFound = lazy(() => import("@/pages/simple-pages").then((m) => ({ default: m.NotFound })))
 const ComingSoon = lazy(() => import("@/pages/simple-pages").then((m) => ({ default: m.ComingSoon })))
@@ -30,6 +31,7 @@ export default function App() {
             <Route index element={<Home />} />
             <Route element={<ProtectedRoute />}>
               <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/scans/:id" element={<ScanPage />} />
             </Route>
             {PLACEHOLDER_ROUTES.map((r) => (
               <Route key={r.to} path={r.to} element={<ComingSoon />} />

@@ -15,6 +15,7 @@ model User {
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   refreshTokens RefreshToken[]
+  scans         Scan[]
 }
 
 /// Only the SHA-256 hash of a refresh token is stored. Tokens are single-use (rotated on every refresh).
@@ -28,4 +29,94 @@ model RefreshToken {
 
   @@index([userId])
   @@index([expiresAt])
+}
+
+enum ScanStatus {
+  QUEUED
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum Viewport {
+  DESKTOP
+  MOBILE
+}
+
+/// Declaration order = severity order, so ORDER BY impact lists critical first.
+enum Impact {
+  CRITICAL
+  SERIOUS
+  MODERATE
+  MINOR
+}
+
+model Scan {
+  id              String      @id @default(uuid()) @db.Uuid
+  userId          String      @db.Uuid
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  url             String
+  normalizedUrl   String
+  finalUrl        String?
+  status          ScanStatus  @default(QUEUED)
+  progress        Int         @default(0)
+  stage           String?
+  score           Int?
+  criticalCount   Int         @default(0)
+  seriousCount    Int         @default(0)
+  moderateCount   Int         @default(0)
+  minorCount      Int         @default(0)
+  passesCount     Int         @default(0)
+  incompleteCount Int         @default(0)
+  pageTitle       String?
+  viewport        Viewport    @default(DESKTOP)
+  durationMs      Int?
+  errorCode       String?
+  errorMessage    String?
+  /// Queue bookkeeping: lets any instance detect scans orphaned by a crashed worker.
+  attempts        Int         @default(0)
+  heartbeatAt     DateTime?
+  createdAt       DateTime    @default(now())
+  startedAt       DateTime?
+  completedAt     DateTime?
+  issues          Issue[]
+  screenshot      ScanScreenshot?
+
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
+}
+
+model Issue {
+  id              String   @id @default(uuid()) @db.Uuid
+  scanId          String   @db.Uuid
+  scan            Scan     @relation(fields: [scanId], references: [id], onDelete: Cascade)
+  ruleId          String
+  impact          Impact
+  wcagTags        String[]
+  /// e.g. ["1.4.3"] derived from the wcag tags
+  wcagCriteria    String[]
+  help            String
+  description     String
+  helpUrl         String
+  selector        String
+  html            String
+  failureSummary  String
+  /// { x, y, width, height } in CSS px relative to the document, null if not measurable
+  boundingBox     Json?
+  occurrenceIndex Int
+
+  @@index([scanId, impact])
+}
+
+/// Kept in its own table so listing/reading scans never drags image bytes along.
+/// Stored as bytea in Postgres: no disk/volume needed, so it behaves identically on Railway.
+model ScanScreenshot {
+  scanId String @id @db.Uuid
+  scan   Scan   @relation(fields: [scanId], references: [id], onDelete: Cascade)
+  data   Bytes
+  mime   String
+  width  Int
+  height Int
+  bytes  Int
 }
