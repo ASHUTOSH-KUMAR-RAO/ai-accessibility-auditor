@@ -79,7 +79,7 @@ export function HeroReportCard() {
           ))}
         </ul>
 
-        <pre className="mt-5 overflow-x-auto rounded-xl bg-[#0f0d0a] p-4 font-mono text-[0.8rem] leading-relaxed text-[#f3ecdd]" aria-label="AI-suggested fix">
+        <pre className="mt-5 whitespace-pre-wrap break-words rounded-xl bg-[#0f0d0a] p-4 font-mono text-[0.8rem] leading-relaxed text-[#f3ecdd]" aria-label="AI-suggested fix">
           <code>
             <span className="opacity-60">- &lt;img src="team.jpg"&gt;</span>{"\n"}
             <span className="text-amber-300">+ &lt;img src="team.jpg" alt="Our team at work"&gt;</span>

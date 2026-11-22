@@ -2,7 +2,7 @@
 
 Enter any URL → scan for WCAG problems → get a score, plain-language explanations and AI-fixed code.
 
-**Status: Phase 1 — project setup + design system.** Scanner, live progress, auth and AI fixes arrive in later phases.
+**Status: Phase 2 — authentication.** Scanner, live progress and AI fixes arrive in later phases.
 
 | | |
 |---|---|
@@ -51,19 +51,37 @@ npm run dev                   # http://localhost:5173
 | `DIRECT_URL` | Direct connection used by `prisma migrate` (Supabase: `:5432`) |
 | `CLIENT_URL` | Allowed origin(s), comma-separated, e.g. `https://app.vercel.app,http://localhost:5173` |
 | `TRUST_PROXY` | Proxy hops to trust (`1` on Railway) |
+| `JWT_ACCESS_SECRET` / `JWT_REFRESH_SECRET` | ≥ 32 chars each and **must differ** (server refuses to start otherwise). Generate: `node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"` |
+| `JWT_ACCESS_EXPIRES` / `JWT_REFRESH_EXPIRES_DAYS` | Defaults `15m` / `7` |
+| `COOKIE_SAMESITE` | `lax` (default, right for the proxied setup), `strict` or `none`. Cookies are always `Secure` in production |
 
-**client/.env** — `VITE_API_URL` (default `http://localhost:4000/api`).
+**client/.env** — `VITE_API_URL` (default `/api`, same-origin: Vite proxies it in dev, Vercel in production).
 
 The server validates env with zod at boot and exits with the names of bad variables (never values).
 
 ## Scripts
 
-Server: `dev` · `build` · `start` · `prisma:generate` · `prisma:migrate` · `prisma:deploy` · `test`
+Server: `dev` · `build` · `start` · `prisma:generate` · `prisma:migrate` · `prisma:deploy` · `test` (needs the Docker DB)
 Client: `dev` · `build` · `preview` · `lint`
+
+## Authentication
+
+- Access token (JWT, 15 min) is returned in the response body and kept **in memory** on the client. Refresh token (JWT, 7 days) lives in an `httpOnly` cookie scoped to `/api/auth`; only its SHA-256 hash is stored.
+- Refresh tokens are **single-use** and rotated on every `/auth/refresh`. Replaying a used token revokes all of that user's sessions.
+- `/auth/refresh` and `/auth/logout` check the request `Origin` (or `Referer`) against `CLIENT_URL` (CSRF).
+- Login errors are generic and equal-time (no user enumeration); login/register have their own rate limits.
+- Client refreshes are single-flight per tab and serialised across tabs with the Web Locks API.
 
 ## Deploy
 
-- **Vercel**: root directory `client`, framework Vite; `vercel.json` rewrites all routes to the SPA. Set `VITE_API_URL`.
+- **Vercel**: root directory `client`, framework Vite; `vercel.json` rewrites all routes to the SPA. Add a rewrite **before** the SPA fallback so `/api/*` reaches Railway and cookies stay first-party:
+  ```json
+  { "rewrites": [
+    { "source": "/api/:path*", "destination": "https://<your-railway-app>.up.railway.app/api/:path*" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ] }
+  ```
+  Set `CLIENT_URL` on Railway to the Vercel origin (it is also the CSRF allow-list) and `TRUST_PROXY=1`.
 - **Railway**: root directory `server`; `railway.json` runs `prisma migrate deploy`, starts the API and health-checks `/api/health`. Set the server env vars above.
 
 ## Design system

@@ -8,10 +8,24 @@ datasource db {
 }
 
 model User {
+  id            String         @id @default(uuid()) @db.Uuid
+  name          String
+  email         String         @unique
+  password      String
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  refreshTokens RefreshToken[]
+}
+
+/// Only the SHA-256 hash of a refresh token is stored. Tokens are single-use (rotated on every refresh).
+model RefreshToken {
   id        String   @id @default(uuid()) @db.Uuid
-  name      String
-  email     String   @unique
-  password  String
+  tokenHash String   @unique
+  userId    String   @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([expiresAt])
 }

@@ -1,11 +1,16 @@
 import { useState } from "react"
 import { Link, NavLink } from "react-router-dom"
-import { Menu } from "lucide-react"
+import { LayoutDashboard, LogOut, Menu } from "lucide-react"
 import { Logo } from "@/components/brand/logo"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { UserMenu } from "@/components/layout/user-menu"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetDescription, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
+import { Skeleton } from "@/components/ui/skeleton"
+import { useAuth } from "@/context/auth-store"
 import { AUTH_LINKS, PRODUCT_LINKS } from "@/lib/nav"
+import { initials, useSignOut } from "@/lib/user"
 import { cn } from "@/lib/utils"
 
 const navLink = ({ isActive }: { isActive: boolean }) =>
@@ -16,6 +21,9 @@ const navLink = ({ isActive }: { isActive: boolean }) =>
 
 export function SiteHeader() {
   const [open, setOpen] = useState(false)
+  const { user, status } = useAuth()
+  const signOut = useSignOut()
+  const close = () => setOpen(false)
 
   return (
     <header className="sticky top-0 z-40 border-b border-border/70 bg-background/80 backdrop-blur-md">
@@ -30,9 +38,16 @@ export function SiteHeader() {
 
         <div className="flex items-center gap-2 sm:gap-3">
           <ThemeToggle />
+
           <div className="hidden items-center gap-2 md:flex">
-            <Link to="/login" className={buttonVariants({ variant: "ghost", size: "sm" })}>Log in</Link>
-            <Link to="/signup" className={buttonVariants({ size: "sm" })}>Sign up</Link>
+            {status === "loading" && <Skeleton className="h-10 w-28 rounded-xl" aria-hidden="true" />}
+            {status === "authenticated" && user && <UserMenu user={user} />}
+            {status === "anonymous" && (
+              <>
+                <Link to="/login" className={buttonVariants({ variant: "ghost", size: "sm" })}>Log in</Link>
+                <Link to="/signup" className={buttonVariants({ size: "sm" })}>Sign up</Link>
+              </>
+            )}
           </div>
 
           <Sheet open={open} onOpenChange={setOpen}>
@@ -42,19 +57,36 @@ export function SiteHeader() {
             <SheetContent side="right" className="w-[85vw] max-w-sm p-6">
               <SheetTitle className="font-display text-2xl">Menu</SheetTitle>
               <SheetDescription className="sr-only">Site navigation</SheetDescription>
+
+              {user && (
+                <div className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3">
+                  <Avatar className="size-11"><AvatarFallback aria-hidden="true" className="bg-foreground font-semibold text-background">{initials(user.name)}</AvatarFallback></Avatar>
+                  <div className="min-w-0">
+                    <p className="truncate font-semibold">{user.name}</p>
+                    <p className="truncate text-sm text-muted-foreground">{user.email}</p>
+                  </div>
+                </div>
+              )}
+
               <nav aria-label="Mobile" className="mt-2 flex flex-col gap-1">
-                {PRODUCT_LINKS.map((l) => (
-                  <NavLink key={l.to} to={l.to} onClick={() => setOpen(false)} className={(s) => cn(navLink(s), "py-3 text-lg")}>
-                    {l.label}
+                {user && (
+                  <NavLink to="/dashboard" onClick={close} className={(s) => cn(navLink(s), "flex items-center gap-2 py-3 text-lg")}>
+                    <LayoutDashboard className="size-5" aria-hidden="true" />Dashboard
                   </NavLink>
+                )}
+                {PRODUCT_LINKS.map((l) => (
+                  <NavLink key={l.to} to={l.to} onClick={close} className={(s) => cn(navLink(s), "py-3 text-lg")}>{l.label}</NavLink>
                 ))}
               </nav>
+
               <div className="mt-auto flex flex-col gap-3">
-                {AUTH_LINKS.map((l, i) => (
-                  <Link key={l.to} to={l.to} onClick={() => setOpen(false)} className={buttonVariants({ variant: i ? "default" : "outline", size: "lg" })}>
-                    {l.label}
-                  </Link>
-                ))}
+                {user ? (
+                  <Button variant="outline" size="lg" onClick={() => { close(); void signOut() }}><LogOut aria-hidden="true" />Log out</Button>
+                ) : (
+                  AUTH_LINKS.map((l, i) => (
+                    <Link key={l.to} to={l.to} onClick={close} className={buttonVariants({ variant: i ? "default" : "outline", size: "lg" })}>{l.label}</Link>
+                  ))
+                )}
               </div>
             </SheetContent>
           </Sheet>

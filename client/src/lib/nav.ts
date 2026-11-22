@@ -13,8 +13,9 @@ export const LEGAL_LINKS: NavItem[] = [
 ]
 
 export const AUTH_LINKS: NavItem[] = [
-  { to: "/login", label: "Log in", description: "Accounts arrive with the auth phase." },
-  { to: "/signup", label: "Sign up", description: "Accounts arrive with the auth phase." },
+  { to: "/login", label: "Log in", description: "Sign in to your account." },
+  { to: "/signup", label: "Sign up", description: "Create your account." },
 ]
 
-export const PLACEHOLDER_ROUTES: NavItem[] = [...PRODUCT_LINKS, ...LEGAL_LINKS, ...AUTH_LINKS]
+/** Pages whose real content ships in a later phase (auth routes are real now). */
+export const PLACEHOLDER_ROUTES: NavItem[] = [...PRODUCT_LINKS, ...LEGAL_LINKS]

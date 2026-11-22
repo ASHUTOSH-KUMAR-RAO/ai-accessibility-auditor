@@ -1,4 +1,5 @@
 import compression from "compression"
+import cookieParser from "cookie-parser"
 import cors from "cors"
 import express from "express"
 import helmet from "helmet"
@@ -30,6 +31,7 @@ app.use(
   ),
 )
 app.use(express.json({ limit: "100kb" }))
+app.use(cookieParser())
 app.use("/api", apiLimiter, router)
 
 app.use(notFoundHandler)
