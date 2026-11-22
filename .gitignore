@@ -18,3 +18,6 @@ server/src/generated/
 .*.log
 
 client/dist-ssr/
+
+# manual deploy files hold real secrets: never commit
+deploy/
