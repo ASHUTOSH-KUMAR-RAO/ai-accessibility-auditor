@@ -8,17 +8,14 @@ import { Problem } from "@/components/landing/problem"
 import { SampleSection } from "@/components/landing/sample-section"
 import { Bento } from "@/components/landing/bento"
 import { useSeo } from "@/lib/seo"
+import { ROUTE_META } from "@/lib/seo-routes"
 
 // Heavy, below-the-fold pieces load only when you scroll near them
 const VisionDemo = lazy(() => import("@/components/landing/vision-demo"))
 const HowItWorks = lazy(() => import("@/components/landing/how-it-works"))
 
 export default function Home() {
-  useSeo({
-    title: "AccessLens: AI website accessibility auditor",
-    description: "Scan any website for WCAG accessibility problems. See exactly where they are, get plain-English explanations and AI-written fixes that are verified with axe-core.",
-    path: "/",
-  })
+  useSeo(ROUTE_META.home)
   return (
     <>
       <Hero />

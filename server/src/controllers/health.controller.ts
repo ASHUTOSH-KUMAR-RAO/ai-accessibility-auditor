@@ -9,5 +9,5 @@ export const getHealth = asyncHandler(async (_req, res) => {
   } catch {
     throw new AppError("Database is unreachable", 503, "DB_DOWN", { database: "down" })
   }
-  sendSuccess(res, { status: "ok", database: "up", uptime: Math.round(process.uptime()) }, "Healthy")
+  sendSuccess(res, { status: "ok", database: "connected", uptime: Math.round(process.uptime()) }, "Healthy")
 })

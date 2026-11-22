@@ -17,10 +17,17 @@ const systemDark = () => window.matchMedia("(prefers-color-scheme: dark)").match
  * (Replaces next-themes, whose injected <script> triggers a React 19 console error.)
  */
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>(read)
-  const [prefersDark, setPrefersDark] = useState(systemDark)
+  // The first render (also the server render and the hydration pass) must be identical everywhere: "system", light.
+  // The real values are read right after mount; the inline script in index.html has already set the <html> class, so nothing flashes.
+  const [theme, setThemeState] = useState<Theme>("system")
+  const [prefersDark, setPrefersDark] = useState(false)
+  const [synced, setSynced] = useState(false)
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing with browser storage after hydration
+    setThemeState(read())
+    setPrefersDark(systemDark())
+    setSynced(true)
     const mq = window.matchMedia("(prefers-color-scheme: dark)")
     const onChange = () => setPrefersDark(mq.matches)
     const onStorage = (e: StorageEvent) => e.key === THEME_KEY && setThemeState(read())
@@ -34,8 +41,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   const resolvedTheme = theme === "system" ? (prefersDark ? "dark" : "light") : theme
   useEffect(() => {
-    document.documentElement.classList.toggle("dark", resolvedTheme === "dark")
-  }, [resolvedTheme])
+    if (synced) document.documentElement.classList.toggle("dark", resolvedTheme === "dark") // not before the real values are known: the inline script's class stays until then
+  }, [resolvedTheme, synced])
 
   const setTheme = useCallback((t: Theme) => {
     setThemeState(t)

@@ -1,7 +1,6 @@
 import { useEffect } from "react"
 
-const SITE = (import.meta.env.VITE_SITE_URL as string | undefined)?.replace(/\/$/, "") || window.location.origin
-export const siteOrigin = SITE
+export const siteOrigin = () => ((import.meta.env.VITE_SITE_URL as string | undefined)?.replace(/\/$/, "") || (typeof window === "undefined" ? "" : window.location.origin))
 
 export interface Seo {
   title: string
@@ -28,7 +27,7 @@ function setMeta(selector: string, attr: "name" | "property", key: string, conte
 export function useSeo({ title, description, path, noindex }: Seo) {
   useEffect(() => {
     const full = title.includes("AccessLens") ? title : `${title} | AccessLens`
-    const url = `${SITE}${path ?? window.location.pathname}`
+    const url = `${siteOrigin()}${path ?? window.location.pathname}`
     document.title = full
     setMeta('meta[name="description"]', "name", "description", description)
     setMeta('meta[property="og:title"]', "property", "og:title", full)

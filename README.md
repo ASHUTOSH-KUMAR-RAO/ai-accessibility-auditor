@@ -1,170 +1,284 @@
-# AccessLens — AI Website Accessibility Auditor
+<div align="center">
 
-Enter any URL → scan for WCAG problems → get a score, plain-language explanations and AI-fixed code.
+<img src="docs/screenshots/phase7a-landing-hero-light.webp" alt="AccessLens landing page: 'Make the web usable for everyone' with an animated scan of a web page" width="900">
 
-**Status: Phase 4 — the report.** Sign in, scan a public website, watch the progress live, then read a full accessibility report: score and grade, charts, every issue with WCAG criteria and who it affects, and a screenshot viewer that shows each problem on the page. AI-written fixes (Phase 5) and PDF/share/compare (Phase 6) come next.
+# AccessLens
 
-| | |
+**An AI website accessibility auditor. Paste a URL, see exactly who your site locks out, and get fixes that are checked before you see them.**
+
+![React](https://img.shields.io/badge/React-19-20232a?logo=react) ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white) ![Node](https://img.shields.io/badge/Node-22-5fa04e?logo=nodedotjs&logoColor=white) ![Playwright](https://img.shields.io/badge/Playwright-axe--core-2ead33?logo=playwright&logoColor=white) ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Supabase-336791?logo=postgresql&logoColor=white) ![Groq](https://img.shields.io/badge/AI-Groq-f55036)
+![Tests](https://img.shields.io/badge/tests-289%20server%20%2B%209%20client%20passing-1b6b46) ![axe](https://img.shields.io/badge/axe--core-0%20violations-1b6b46) ![WCAG](https://img.shields.io/badge/WCAG-2.2%20AA-1b6b46) ![Lighthouse](https://img.shields.io/badge/Lighthouse%20desktop-99%20%C2%B7%20100%20%C2%B7%20100%20%C2%B7%20100-1b6b46)
+
+**[Live demo](LIVE_URL)** · **[Sample report (no login)](LIVE_URL/sample)** · Demo login: `demo@accesslens.dev` / `AccessLens-Demo-2026`
+
+</div>
+
+> AccessLens is a portfolio project: a full-stack product built end to end (scanner, queue, AI pipeline, report UI, PDF, sharing, trends) with security and accessibility treated as features, not afterthoughts.
+
+---
+
+## Why AccessLens
+
+The web is still mostly inaccessible, and the people who pay for it are not a niche:
+
+- **94.8%** of the one million most popular home pages had detectable WCAG 2 failures, and **79.1%** had text with too little colour contrast, the most common failure. ([WebAIM Million, 2025](https://webaim.org/projects/million/))
+- About **1.3 billion people, 1 in 6 worldwide**, live with a significant disability. ([World Health Organization](https://www.who.int/news-room/fact-sheets/detail/disability-and-health))
+- **2.2 billion** people have some form of vision impairment. ([WHO World report on vision, 2019](https://www.who.int/publications/i/item/9789241516570))
+
+Most accessibility tools stop at a list of rule IDs. AccessLens goes further: it shows *where* each problem is on the page, explains it in plain English, writes the fix, **re-checks the fix with axe-core**, and lets you test the page the way a keyboard user or a colour-blind visitor experiences it.
+
+## Features
+
+### Score, report and issue map
+
+A 0-100 score with a documented formula, issues grouped by rule, severity, WCAG principle and level, and a full-page screenshot with numbered markers. Severity is shown by colour *and* icon *and* pattern *and* word (the palette is validated for colour-blind separation).
+
+<p><img src="docs/screenshots/report-hero-light-1280.webp" alt="Report header with score gauge and severity breakdown" width="49%"> <img src="docs/screenshots/report-viewer-dark-1280.webp" alt="Screenshot issue map with numbered markers next to the issue list" width="49%"></p>
+
+### AI fixes, verified
+
+For each element: a plain-English explanation, the smallest HTML change that fixes it, CSS and React versions, test steps, and WCAG criteria. The fix is then **re-run through axe-core in an isolated, offline browser** and labelled *Verified fix*, *Not verified* or *Needs page context*. If the first attempt fails the re-check, a stronger model gets a second try. Without a key, on timeout, or when rate limited you get clearly labelled *guided fixes* from built-in rules, so the app never breaks.
+
+<img src="docs/screenshots/phase5-fix-diff-desktop-light.webp" alt="AI fix panel: before and after code with a Verified fix badge" width="80%">
+
+### Contrast fixed by maths, not guesses
+
+For colour-contrast failures the real WCAG ratio is calculated and the nearest accessible colours are computed algorithmically. The AI only explains the result; it never picks a colour.
+
+<img src="docs/screenshots/phase5-contrast-mobile-dark.webp" alt="Contrast card with current and suggested colour swatches, ratios and AA/AAA chips" width="30%">
+
+### Vision simulator
+
+Protanopia, deuteranopia, tritanopia (Machado et al. 2009 matrices), achromatopsia, low-vision blur and cataract-like haze, as SVG filters in your browser (zero server cost), with slider and side-by-side comparison. There is a live demo on the landing page.
+
+<img src="docs/screenshots/phase6-vision-slider-dark.webp" alt="Vision simulator comparing the original page with a deuteranopia simulation using a slider" width="80%">
+
+### Keyboard tab-order map
+
+During the scan, AccessLens presses Tab through the page and draws the path on the screenshot. It finds keyboard traps, invisible focus, off-screen focus, big focus jumps, links that throw focus away (`onfocus="blur()"`), and clickable elements Tab can never reach. On a slow site you get a clearly labelled partial map instead of a failed scan.
+
+<img src="docs/screenshots/phase6-keyboard-map-light.webp" alt="Keyboard tab-order map with numbered path over the screenshot and a list of focus problems" width="80%">
+
+### PDF report
+
+A branded, **tagged** PDF (real text, headings, bookmarks, document language) with executive summary, breakdowns, top issues with fixes, keyboard summary, annotated screenshot and a full rule appendix. It is rendered with JavaScript off and every network request blocked, uses saved AI fixes only (no AI call), and is cached per scan until a fix or summary changes.
+
+### Share links
+
+Read-only links with a 256-bit random token (only its hash is stored), optional expiry (24 h / 7 d / 30 d / never), an option to hide the screenshot, instant revoke, a QR code and an embeddable score badge.
+
+<img src="docs/screenshots/phase6-share-dialog-light.webp" alt="Share dialog with link, QR code, badge snippet and active links" width="60%">
+
+### Compare scans and track trends
+
+Issues are matched across scans by fingerprint (rule + normalised selector + markup hash, with moved/changed/fuzzy fallbacks): *Fixed*, *New*, *Still present*. Per-site score trend with an accessible data table. Export issues as CSV or JSON.
+
+<p><img src="docs/screenshots/phase6-compare-light.webp" alt="Compare two scans: score change and Fixed, New, Still present counts" width="49%"> <img src="docs/screenshots/phase6-trend-mobile-dark.webp" alt="Score trend chart for a site on a phone" width="22%"></p>
+
+### Dashboard
+
+Stats, sites with sparklines, most common issues across all scans, collapsible sidebar (mobile drawer), and a one-click sample scan for new users.
+
+<img src="docs/screenshots/phase7a-dashboard-light.webp" alt="Dashboard with stat cards, sites and common issues next to a collapsible sidebar" width="80%">
+
+---
+
+## Architecture
+
+```mermaid
+flowchart LR
+  B[Browser<br/>React 19 SPA + prerendered public pages] -->|"/api/* (rewrite)"| V[Vercel]
+  V --> API[Express 5 API<br/>Railway · Docker]
+  B -. "Socket.io (live progress)" .-> API
+  API --> DB[(PostgreSQL<br/>Supabase · RLS)]
+  API --- Q[DB-backed queue<br/>SKIP LOCKED + heartbeat]
+  Q --> W[Scan worker]
+  W --> P[Playwright · Chromium<br/>axe-core + Tab walk]
+  P --> E[Egress proxy<br/>re-validates every connection]
+  E --> T[(Public website<br/>being scanned)]
+  W --> DB
+  API --> G[Groq LLM<br/>sanitised snippets only]
+  API --> PDF[Locked-down Chromium<br/>PDF + fix verification]
+```
+
+- **Queue in Postgres:** scans are claimed with `FOR UPDATE SKIP LOCKED`, heartbeats detect crashed workers, and a graceful shutdown hands running scans back to the queue.
+- **One browser, many isolated contexts:** a scan gets a fresh context behind its own egress proxy; PDF and fix verification use separate, network-less contexts.
+- **Static where possible:** the public pages are prerendered at build time and hydrated; the signed-in app is a normal SPA.
+
+### How a scan works
+
+1. The URL is normalised and checked (scheme, port, credentials, IP literals) before it is queued.
+2. A worker claims the scan, resolves DNS and refuses private ranges, then loads the page in a fresh Chromium context whose **every** connection goes through the egress proxy.
+3. axe-core runs against WCAG 2.2 A/AA plus best practices; element boxes are measured; a full-page screenshot is taken.
+4. The worker presses **Tab** up to 100 times (8 s budget) and records the focus path, visibility of focus, traps and unreachable controls.
+5. Score, per-rule totals, issues, screenshot and keyboard map are stored in one transaction. Progress streams to the browser over Socket.io (polling as fallback).
+
+### How AI fixes are verified
+
+1. The failing element's HTML is **sanitised** (scripts, handlers, input values, tokens in URLs and `data:` URIs removed; truncated) and sent to the model **as JSON data**, never inside instructions.
+2. The reply must be strict JSON that passes a zod schema and contains no scripts, handlers or remote resources; one corrective retry, then a guided fix.
+3. Original and fixed snippets are loaded into an isolated, offline Chromium context (CSP `default-src 'none'`, all requests aborted) and the **single axe rule** is run on both.
+4. *Verified* = fails before, passes after. *Not verified* triggers one retry with the stronger model, shown the axe failure. *Needs page context* = page-level rules that can't be judged on a snippet.
+5. Results are cached by `hash(rule + normalised HTML + failure summary + model + prompt version)` and shared across users, so nothing is paid for twice.
+
+---
+
+## Security
+
+| Area | What is done |
 |---|---|
-| Client | React 19 · Vite · TypeScript · Tailwind v4 · shadcn/ui · Framer Motion · GSAP · TanStack Query |
-| Server | Node · Express 5 · TypeScript · zod · Playwright + axe-core · Socket.io |
-| Report UI | TanStack Query + Virtual · Prism (lazy) · hand-built accessible bar charts (no chart library) · Framer Motion · GSAP |
-| Database | PostgreSQL (local Docker → Supabase) · Prisma 7 |
-| Deploy | Vercel (client) · Railway (server) |
+| **SSRF** | Every connection from the scanner (redirect hops, sub-resources, iframes) goes through a local **egress proxy** that re-resolves and re-validates the target, so DNS rebinding and redirects to internal addresses fail. Private ranges, loopback, link-local/metadata addresses, odd ports and credentials in URLs are refused; WebSockets are blocked. |
+| **Prompt injection** | Scanned HTML is untrusted: sanitised, truncated and sent only as a JSON string value; the system prompt tells the model to ignore instructions inside the data; replies are schema-validated and refused if they contain scripts or handlers; AI text is never rendered as HTML, and links in it work only for `w3.org` / `deque.com`. |
+| **Auth** | bcrypt, short-lived access tokens in memory, single-use rotating refresh tokens in an HTTP-only cookie (hashed at rest), reuse detection, origin check on state-changing requests, rate limits. |
+| **Share links** | 256-bit random token, **only the SHA-256 is stored**, constant 404 for wrong / expired / revoked tokens, no owner data in public payloads, `noindex` + `no-referrer`, per-IP rate limits, public API is read-only and can never trigger AI. |
+| **Exports** | CSV cells that start with `=`, `+`, `-`, `@` are neutralised (formula injection); PDFs are generated with JavaScript disabled and no network. |
+| **Database** | **Row Level Security enabled on every table with no policies** and anon/authenticated grants revoked, so Supabase's public API can read nothing; a test fails if any table lacks RLS. Tests refuse to run against a non-local database. |
+| **Browser** | Strict CSP (`script-src 'self'`, no inline scripts), `frame-ancestors 'none'`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`. |
+| **Secrets** | `.env` files are git-ignored; the logger redacts keys; no snippet or AI reply is ever logged. |
 
-## Structure
+## Accessibility
 
-```
-client/   React app (Vercel)      server/   Express API (Railway)
-docs/screenshots/                 docker-compose.yml  local Postgres
-```
+AccessLens is itself held to WCAG 2.2 AA:
 
-## Run locally
+- **axe-core: 0 violations** on 32 page states in the final pass (landing, features, privacy, sample report, login, dashboard, history, report × 375 / 1280 px × light / dark), plus earlier passes on every phase's states (AI panel, vision simulator, keyboard tab, share dialog, compare, trends, public share page), and **no horizontal overflow** at 375, 768, 1280 and 1536 px.
+- **Colour-blind safe palette:** severity never relies on colour alone (icon, pattern and word as well), validated for adjacent-pair separation in both themes.
+- **Keyboard first:** skip link, roving focus in the screenshot markers, focus-managed dialogs and sheets, visible 3 px focus rings, `aria-live` regions that announce results (not every streamed token), diffs marked with `+` / `−` and spoken labels.
+- **Motion respects people:** reduced-motion users get the same animations at lower intensity, never a static page (verified on every page); the marquee has a real pause button.
 
-Requires Node ≥ 22 and Docker.
+## Testing
 
-> **Chromium:** run `npm run playwright:install` once in `server/` (downloads the browser the scanner drives).
-> **Tests** share the dev database: stop the dev server first (its worker would consume the queue tests' scans).
+| Suite | Result |
+|---|---|
+| Server (unit, API, integration, end to end) | **289 passing**: scanner, SSRF, egress proxy, scoring, tab-order recorder (traps, invisible focus, slow pages), AI pipeline with a mocked LLM (invalid JSON, timeouts, 429, prompt injection, cache, verification), contrast maths, share-link security, PDF (no network), compare matching, exports, dashboard, RLS, and a real-browser **signed-out URL → sign-up → automatic scan** flow |
+| Client | **9 passing**: colour-blindness matrices (published values), safe-link rules, diff |
+| axe-core | **0 violations**, 32 page states in the final pass (see above) |
+| Lighthouse, landing, **desktop** | Performance **99**, Accessibility **100**, Best practices **100**, SEO **100** (median of 3) |
+| Lighthouse, landing, **mobile** (throttled) | Performance **74** (median of 3), Accessibility 100, Best practices 100, SEO 100; LCP 3.7 s, CLS 0 |
+| Lighthouse, sample report, mobile | Performance **63** (median of 3), Accessibility 100, Best practices 100, SEO 100; CLS 0 |
+
+Mobile performance is measured on a compressed static server with Lighthouse's default 4× CPU / slow-4G throttling. Public pages are prerendered, so the first paint is fast (observed ~0.6 s unthrottled); the remaining cost is JavaScript for hydration and animation. Live numbers from the deployed site go here once it is up.
+
+Run them yourself: see [Scripts](#scripts).
+
+## Tech stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | React 19, Vite, TypeScript, Tailwind v4, shadcn/ui (Base UI), Framer Motion, GSAP ScrollTrigger, TanStack Query + Virtual, Prism (lazy) |
+| Backend | Node 22, Express 5, TypeScript, zod, Socket.io, Prisma 7 (pg adapter) |
+| Scanning | Playwright (Chromium), axe-core, custom egress proxy |
+| AI | Groq (`gpt-oss-20b` / `gpt-oss-120b`), strict JSON schemas, SSE streaming |
+| Data | PostgreSQL on Supabase (RLS), DB-backed job queue |
+| Deploy | Railway (Docker, slim Chromium image), Vercel (static + rewrite), prerendered public routes |
+| Quality | `node:test`, Playwright E2E, axe-core, Lighthouse |
+
+## Local setup
+
+Requirements: Node 22+, Docker.
 
 ```bash
-# 1. Database (host port 5455 to avoid clashing with other local Postgres)
-docker compose up -d --wait
+git clone https://github.com/ASHUTOSH-KUMAR-RAO/ai-accessibility-auditor.git
+cd ai-accessibility-auditor
 
-# 2. Server
+# 1. database (local Postgres on :5455)
+docker compose up -d
+
+# 2. server
 cd server
-cp .env.example .env
+cp .env.example .env            # then fill in the two JWT secrets (command in the file) and optionally GROQ_API_KEY
 npm install
-npm run playwright:install    # once: Chromium for the scanner
-npm run prisma:migrate        # creates tables
-npm run dev                   # http://localhost:4000/api/health
+npm run playwright:install      # downloads Chromium once
+npm run prisma:deploy           # applies migrations
+npm run seed:demo               # optional: demo account with scans, trends and cached AI fixes
+npm run dev                     # API + scan worker on :4000
 
-# 3. Client (new terminal)
+# 3. client (second terminal)
 cd client
 cp .env.example .env
 npm install
-npm run dev                   # http://localhost:5173
+npm run dev                     # http://localhost:5173
 ```
 
-## Environment variables
+Without `GROQ_API_KEY` everything works; you get guided fixes instead of AI fixes.
 
-**server/.env**
+### Environment variables
+
+Names and meaning only. Never commit real values.
+
+**`server/.env`**
 
 | Variable | Purpose |
 |---|---|
-| `PORT` | API port (Railway injects it) |
-| `DATABASE_URL` | Pooled connection used at runtime (Supabase: transaction pooler, `:6543`, `?pgbouncer=true`) |
-| `DIRECT_URL` | Direct connection used by `prisma migrate` (Supabase: `:5432`) |
-| `CLIENT_URL` | Allowed origin(s), comma-separated, e.g. `https://app.vercel.app,http://localhost:5173` |
-| `TRUST_PROXY` | Proxy hops to trust (`1` on Railway) |
-| `JWT_ACCESS_SECRET` / `JWT_REFRESH_SECRET` | ≥ 32 chars each and **must differ** (server refuses to start otherwise). Generate: `node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"` |
-| `JWT_ACCESS_EXPIRES` / `JWT_REFRESH_EXPIRES_DAYS` | Defaults `15m` / `7` |
-| `SCAN_WORKER_ENABLED` | `true` runs the scan worker in this process. Set `false` on API-only instances |
-| `SCAN_CONCURRENCY` | Scans run at the same time per instance (default 2) |
-| `SCAN_RATE_LIMIT_PER_HOUR` / `SCAN_MAX_ACTIVE_PER_USER` | Per-user limits (defaults 10 / 2) |
-| `SCAN_NAV_TIMEOUT_MS` / `SCAN_TOTAL_TIMEOUT_MS` | Navigation 30 s / whole scan 60 s |
-| `SCAN_MAX_PAGE_BYTES` | Abort pages downloading more than this (default 30 MB) |
-| `COOKIE_SAMESITE` | `lax` (default, right for the proxied setup), `strict` or `none`. Cookies are always `Secure` in production |
+| `DATABASE_URL`, `DIRECT_URL` | Pooled runtime connection and direct/session connection for migrations |
+| `TEST_DATABASE_URL`, `TEST_DIRECT_URL` | **Local** database the tests use (tests refuse anything that is not localhost) |
+| `CLIENT_URL` | Allowed browser origin(s), comma-separated (CORS + CSRF origin check) |
+| `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET` | Token signing secrets (≥ 32 chars, must differ) |
+| `JWT_ACCESS_EXPIRES`, `JWT_REFRESH_EXPIRES_DAYS`, `COOKIE_SAMESITE`, `TRUST_PROXY` | Session and proxy behaviour |
+| `GROQ_API_KEY`, `GROQ_MODEL_FAST`, `GROQ_MODEL_SMART`, `AI_TIMEOUT_MS` | AI provider and models |
+| `AI_RATE_LIMIT_PER_HOUR`, `AI_MAX_CONCURRENT` | Per-user AI budget and parallel calls |
+| `SCAN_WORKER_ENABLED`, `SCAN_CONCURRENCY`, `SCAN_RATE_LIMIT_PER_HOUR`, `SCAN_MAX_ACTIVE_PER_USER` | Scan engine and limits |
+| `SCAN_NAV_TIMEOUT_MS`, `SCAN_TOTAL_TIMEOUT_MS`, `SCAN_MAX_PAGE_BYTES` | Scan safety limits |
+| `DB_POOL_MAX` | Database connections per instance |
 
-**client/.env** — `VITE_API_URL` (default `/api`, same-origin: Vite proxies it in dev, Vercel in production). `VITE_SOCKET_URL` (optional, see *Live progress*).
+**`client/.env`**
 
-The server validates env with zod at boot and exits with the names of bad variables (never values).
+| Variable | Purpose |
+|---|---|
+| `VITE_API_URL` | API base (`/api`: proxied in dev, rewritten in production) |
+| `VITE_SOCKET_URL` | Socket.io origin (empty in dev; the API origin in production) |
+| `VITE_SITE_URL` | Public origin for canonical links, Open Graph, sitemap and robots |
 
-## Scripts
+### Scripts
 
-Server: `dev` · `build` · `start` · `prisma:generate` · `prisma:migrate` · `prisma:deploy` · `test` (needs the Docker DB)
-Client: `dev` · `build` · `preview` · `lint`
+| Where | Command | What it does |
+|---|---|---|
+| server | `npm run dev` | API + worker with reload |
+| server | `npm test` | all server tests (needs the local Docker DB; the client must be built for the E2E test) |
+| server | `npm run prisma:deploy` | apply migrations |
+| server | `npm run seed:demo` | create/reset the demo account (`--force` required in production) |
+| server | `npm run sample:export -- <scanId>` | freeze a scan into the static sample report |
+| client | `npm run dev` | Vite dev server |
+| client | `npm run build` | typecheck, build, SSR build, prerender public pages |
+| client | `npm test` | client unit tests |
+| client | `npm run lint` | oxlint |
 
-## Authentication
+### Project structure
 
-- Access token (JWT, 15 min) is returned in the response body and kept **in memory** on the client. Refresh token (JWT, 7 days) lives in an `httpOnly` cookie scoped to `/api/auth`; only its SHA-256 hash is stored.
-- Refresh tokens are **single-use** and rotated on every `/auth/refresh`. Replaying a used token revokes all of that user's sessions.
-- `/auth/refresh` and `/auth/logout` check the request `Origin` (or `Referer`) against `CLIENT_URL` (CSRF).
-- Login errors are generic and equal-time (no user enumeration); login/register have their own rate limits.
-- Client refreshes are single-flight per tab and serialised across tabs with the Web Locks API.
+```text
+.
+├── client/                    React app
+│   ├── public/demo/           static sample report (JSON + screenshot)
+│   ├── scripts/prerender.mjs  build step: prerender public routes
+│   ├── vercel.json            rewrites, CSP and cache headers
+│   └── src/
+│       ├── components/        landing, report, ai, layout, dashboard, ui (shadcn)
+│       ├── lib/               API client, hooks, vision matrices, SEO, diff
+│       └── pages/             route components
+├── server/
+│   ├── prisma/                schema + migrations (incl. RLS)
+│   ├── scripts/               seed-demo, export-sample, brand assets
+│   └── src/
+│       ├── services/scanner/  Playwright + axe + egress proxy + tab-order recorder
+│       ├── services/ai/       LLM client, prompts, sanitiser, contrast maths, verifier
+│       ├── services/{pdf,share,compare,export,report}/
+│       ├── controllers/ routes/ middlewares/
+│       └── *.test.ts          unit, API and E2E tests
+├── docs/                      DEPLOY.md, SMOKE_TEST.md, screenshots
+└── docker-compose.yml         local Postgres
+```
 
-## Scan engine
+## Deployment
 
-**Flow.** `POST /api/scans` validates the URL, stores a `QUEUED` scan and returns `202` at once. A database-backed worker claims jobs with `FOR UPDATE SKIP LOCKED` (safe with several instances, no Redis), runs Playwright Chromium + axe-core (WCAG 2.0/2.1/2.2 A + AA and best-practice rules) in a fresh isolated context, then stores the score, per-severity counts, every affected element (selector, HTML, failure summary, bounding box) and a compressed screenshot.
+Railway (API + scan worker, Docker with Chromium) and Vercel (frontend), database on Supabase. Step-by-step click path, every environment variable and the order of steps are in **[docs/DEPLOY.md](docs/DEPLOY.md)**; a checklist to verify the live app is in **[docs/SMOKE_TEST.md](docs/SMOKE_TEST.md)**.
 
-**Score (0–100).** `score = clamp(100 − Σ over failing rules of W[impact] × (1 + 0.5·log2(nodes)), 0, 100)`, with `W = critical 10, serious 6, moderate 3, minor 1`. A rule counts once at full weight and grows slowly with the number of affected elements (+0.5·W per doubling). No violations = 100. Examples: 1 critical on 1 element → 90; 1 critical on 8 → 75; 1 critical + 5 serious → 60. Severity counts are *affected elements*; only the first 50 per rule (1500 per scan) are stored as Issue rows, the true totals are still counted and scored. Implemented in `server/src/services/scanner/score.ts`.
+## What this project shows
 
-**Screenshot storage.** JPEG (≤ 500 KB, height ≤ 5000 px, quality stepped down to fit) kept as `bytea` in its own table `ScanScreenshot`. No disk or volume, so it behaves the same on Railway, and listing scans never loads image bytes. Served by `GET /api/scans/:id/screenshot` (owner only).
+- Designed and built a full-stack accessibility auditor end to end: Playwright + axe-core scanner behind an SSRF-hardened egress proxy, Postgres-backed job queue with crash recovery, real-time progress over Socket.io, and a report UI with a screenshot issue map.
+- Built an LLM pipeline that **verifies its own output**: sanitised snippets as data (prompt-injection defence), strict JSON schemas, and an automatic axe-core re-check in an isolated offline browser that labels every fix *Verified*, *Not verified* or *Needs page context*, with a deterministic fallback so AI failure never breaks the app; shared cache across users.
+- Shipped features most audit tools lack: keyboard tab-order map with trap and invisible-focus detection, colour-blindness simulator, tagged PDF reports, expiring share links (hashed tokens), issue-level scan comparison and score trends.
+- Hardened and tested for production: Row Level Security on every table, CSP with no inline scripts, **289 server tests** including a real-browser sign-up-to-scan flow, **0 axe-core violations** on 32 page states in light and dark at 375 and 1280 px, Lighthouse 99/100/100/100 on desktop.
+- Cut first-paint cost by prerendering public routes (hydrated, SEO tags in the HTML), moving animations to the compositor, splitting heavy libraries, and reserving layout space (CLS 0); documented the remaining mobile performance gap honestly.
 
-**SSRF protection** (`server/src/services/scanner/ssrf.ts`, `egress-proxy.ts`):
-- http/https only, no credentials, no whitespace/control characters, max 2048 chars; ports 80/443 only; no `localhost`, `*.local`, `*.internal`, single-label names.
-- The hostname is resolved and **every** address must be public: IPv4 deny-list (private, loopback, link-local incl. 169.254.169.254, CGNAT, multicast, reserved…) and IPv6 allow-list (2000::/3 minus special ranges) with IPv4-mapped / NAT64 / 6to4 unwrapped. Decimal/hex/octal IP forms are normalised by the URL parser first.
-- **Playwright's `route()` does not see redirect hops** (verified), so it is not enough on its own. Chromium is forced through a **per-scan egress proxy** that re-validates every connection it makes (redirects, sub-resources, iframes) and connects only to the IPs it just validated, so DNS rebinding has no gap. `route()` stays as a fast pre-check.
-- Downloads, popups, new tabs, dialogs, service workers and WebSockets are blocked; WebRTC UDP is disabled; each scan has a throw-away context (no cookies/storage).
-- User-facing errors are fixed, friendly codes: `INVALID_URL, BLOCKED_HOST, DNS_FAILED, TIMEOUT, SITE_UNREACHABLE, PAGE_TOO_LARGE, SCAN_FAILED`. Raw errors only go to the server log.
-- Residual risk: Chromium itself is the sandbox boundary inside the container. On Railway also restrict egress at the network level if you can.
+---
 
-**Limits.** Per user: 10 scans/hour and 2 active (both configurable, enforced in a per-user advisory-locked transaction). Deleting a finished scan does not refund the hourly budget check, since it counts rows: users could delete to reset it (acceptable for now; use soft-delete if it matters).
-
-**Live progress.** Socket.io on the API's HTTP server; handshake carries the access token, each user joins `user:<id>`; events `scan:queued | scan:progress | scan:completed | scan:failed | scan:cancelled`. The client keeps one socket for signed-in users, updates the TanStack Query cache from events, refetches on reconnect and falls back to polling (every 3 s) while the socket is down. **Vercel rewrites cannot proxy WebSocket upgrades**, so in production set `VITE_SOCKET_URL` to the API origin (CORS uses `CLIENT_URL`); without it Socket.io still works over long-polling through the rewrite.
-
-**Crash safety.** Running scans heartbeat every 3 s. Scans whose heartbeat is older than 30 s are re-queued (once more), then failed. SIGTERM stops claiming, lets running scans finish for 10 s, then hands them back to the queue.
-
-## The report (Phase 4)
-
-**API** (all owner-scoped; soft-deleted scans are invisible):
-- `GET /api/scans/:id/report`: summary + grade, severity / WCAG principle / level breakdowns, rules grouped with WCAG criteria (names + W3C links), "who is affected", true affected-element totals, needs-review and passed lists, and the screenshot markers (numbered boxes).
-- `GET /api/scans/:id/rules/:ruleId/nodes`: a rule's affected elements (cursor-paginated). `POST /api/scans/:id/rescan`. `GET /api/scans` now takes `q, status, viewport, minScore, maxScore, sort=date|score, order`. `GET /api/scans/stats`.
-- **Grade:** A ≥ 90, B ≥ 80, C ≥ 70, D ≥ 60, otherwise F (`services/report/grade.ts`). **Level** comes from axe's own tags (A, AA, else best-practice); **principle** from the first WCAG criterion of the rule. "Who is affected" is a maintained map (`audiences.ts`) with a fallback from axe's category tags.
-- **Soft delete:** `deletedAt`. A deleted scan disappears at once but its row still counts toward the hourly limit; rows are purged after 7 days. Scans made before Phase 4 still open (rules are rebuilt from the stored Issue rows and flagged "saved sample").
-- Favicons are fetched by the scanner **through the egress proxy** and inlined as a small `data:` URI, so the viewer's browser never contacts the scanned site.
-
-**Severity colours** are checked with the dataviz skill's validator, not by eye: the four marks (`#d55e00 #cc79a7 #0072b2 #009e73`; dark theme uses `#c777a5` for serious) pass colour-blind separation (adjacent ΔE ≥ 8), the normal-vision floor (≥ 15) and ≥ 3:1 on the card surface in both themes. Text never wears them: labels are ink; the colour lives in icons, outlines and bars. Every severity also has its own icon and fill pattern.
-
-**Screenshot viewer:** boxes + numbered markers per affected element (colour, icon shape and outline/fill pattern per severity). "Show on page" zooms and pulses the element; clicking a marker (or Enter) opens its issue. Markers use a roving tabindex (Tab once, then arrow keys / Home / End); `+` `-` `0` zoom the focused viewer. Desktop: sticky side panel. Mobile: full-height bottom sheet.
-
-## Deploy
-
-- **Vercel**: root directory `client`, framework Vite; `vercel.json` rewrites all routes to the SPA. Add a rewrite **before** the SPA fallback so `/api/*` reaches Railway and cookies stay first-party:
-  ```json
-  { "rewrites": [
-    { "source": "/api/:path*", "destination": "https://<your-railway-app>.up.railway.app/api/:path*" },
-    { "source": "/(.*)", "destination": "/index.html" }
-  ] }
-  ```
-  Set `CLIENT_URL` on Railway to the Vercel origin (it is also the CSRF allow-list) and `TRUST_PROXY=1`.
-- **Railway**: root directory `server`; `railway.json` builds `server/Dockerfile`: a slim **Chromium-only** image (`node:22-bookworm-slim` + the headless shell and its OS libraries, installed by the same pinned Playwright version the app uses, so nothing to keep in sync; ~1.7 GB vs 4.8 GB for the official all-browsers image). It runs as the non-root `node` user, applies `prisma migrate deploy`, then `exec`s node under `tini` so SIGTERM reaches the app. Health check: `/api/health`. Set the server env vars above. **Memory:** Chromium needs headroom: plan for ~1 GB for the default `SCAN_CONCURRENCY=2` (≈ 400–500 MB per concurrent scan + the API). Use 2 GB if you raise concurrency. Several instances are safe (jobs are claimed with `SKIP LOCKED`).
-
-## Design system
-
-Concept: *accessibility made visible* — a fixed Braille-cell texture (real 2×3 cells spelling "accessibility is a right not a feature…") over paper grain, warm paper / deep ink themes, amber accent only for actions and focus. Fraunces (display) + Atkinson Hyperlegible Next (body). Tokens live in `client/src/index.css`. Target: WCAG 2.2 AA in light and dark. Reduced-motion users get the same motion at lower intensity, never none.
-
-API responses always use `{ success, message, data, error }`.
-
-## Phase 5: AI fixes (Groq)
-
-- **Per-element fix** `POST /api/scans/:id/issues/:issueId/ai-fix` (JSON, or SSE with `Accept: text/event-stream` to stream the explanation): explanation, minimal HTML fix, CSS, React/JSX, how to fix / test, WCAG criteria, confidence.
-- **Verified fixes**: the fix is re-checked with axe for that one rule in an isolated, offline Chromium context (sanitised markup, CSP `default-src 'none'`, all requests aborted). Status: `VERIFIED`, `NOT_VERIFIED` (retried once with the smart model) or `NOT_APPLICABLE` (page-level rules).
-- **Contrast** colours are computed (WCAG formula), never chosen by the model.
-- **Guided fixes (no AI)** are used without a key, on timeout/429/invalid output, or when the hourly AI limit is reached.
-- **Scan summary** `GET|POST /api/scans/:id/ai-summary` (smart model, cached per scan; `{ "regenerate": true }` to redo).
-- **Safety**: page HTML is sent only as JSON data (never in instructions) after stripping scripts, handlers, `data:` URIs, input values and URL tokens; AI output is validated with zod, refused if it contains scripts/handlers, and rendered only as text (links only to w3.org / deque.com).
-- **Cache** (`AiFix`, shared across users) keyed by rule + normalised HTML + failure summary + model + prompt version. Per-user limit `AI_RATE_LIMIT_PER_HOUR` (cache hits are free), `AI_MAX_CONCURRENT` parallel calls.
-- Config: `GROQ_API_KEY`, `GROQ_MODEL_FAST` (default `openai/gpt-oss-20b`), `GROQ_MODEL_SMART` (`openai/gpt-oss-120b`), `AI_TIMEOUT_MS`. Leave the key empty for guided-only mode.
-
-Screenshots: `docs/screenshots/phase5-*.webp`.
-
-## Phase 6: Smart features
-
-- **Vision simulator** (screenshot panel → "Vision simulator"): protanopia, deuteranopia, tritanopia (Machado et al. 2009 matrices), achromatopsia, low-vision blur and cataract-like haze. SVG `feColorMatrix` filters run in the browser (the matrices are defined for linear RGB, which is the SVG filter default). Simulated / slider / side-by-side.
-- **Keyboard tab-order map** (report → "Keyboard"): the scanner presses Tab (max 100 stops, 8 s budget) after axe and the screenshot and stores the order with the scan (`Scan.tabOrder`). Warnings: focus jumps, invisible focus, focus dropped (`onfocus="blur()"`), off-screen focus, keyboard traps, interactive elements Tab can't reach. Older scans show "Not available".
-- **PDF report** `GET /api/scans/:id/report.pdf`: self-contained HTML (data: URIs only) → Chromium `page.pdf` with JavaScript off and every request aborted; tagged, bookmarked, real text. Uses saved AI fixes only, never calls the AI. Cached per scan; the fingerprint changes when a fix or summary changes.
-- **Share links** `POST /api/scans/:id/shares`: 256-bit token (only its SHA-256 is stored, shown once), expiry 24 h / 7 d / 30 d / never, optional hidden screenshot, revoke any time, max 10 active per scan. Public, read-only API under `/api/public/:token/*` and page `/r/:token` (noindex, no-referrer, rate limited, no owner data, saved AI fixes only).
-- **Compare + sites**: `GET /api/compare?a=&b=` matches issues by fingerprint (rule + normalised selector + markup hash, then moved / changed / fuzzy matching). `/compare`, `/sites`, `/sites/:host` (score trend with a data table).
-- **Exports + badge**: `GET /api/scans/:id/export.csv|json?rules=` (CSV is formula-injection safe), `GET /api/badge/:token.svg` (works only while the link is active).
-
-Screenshots: `docs/screenshots/phase6-*.webp`. Client unit tests: `cd client && npm test`.
-
-## Phase 7A: landing, public pages, dashboard
-
-- **Landing** (`/`): animated scan mockup, sourced facts (WebAIM Million 2025, WHO), feature bento, a live vision-simulator demo, scroll-drawn "how it works", sample-report teaser, tech-stack marquee (left to right, pausable), FAQ and CTA. Signed-out visitors who scan are sent to sign-up and their URL is scanned right after (`accesslens:pending-url`).
-- **Sample report** (`/sample`): a frozen real report of W3C's inaccessible demo page, served as static files from `client/public/demo` (no login, no API). Regenerate with `cd server && npm run sample:export -- <scanId>`.
-- **Public pages**: `/features`, `/privacy`, `/terms`, `/cookies`, plus a non-blocking cookie notice.
-- **App shell**: collapsible sidebar (state remembered) and a mobile drawer around the dashboard, history, sites, report and compare pages. The dashboard shows stats, sites with sparklines, the most common issues and an empty state.
-- **Keyboard recording** now degrades gracefully: on a slow site the scan still completes and the Keyboard tab says "Partial keyboard map (site was slow)".
-- **Demo data**: `cd server && npm run seed:demo` creates `demo@accesslens.dev` (password `AccessLens-Demo-2026`) with 9 scans across 3 sites and cached AI fixes. It refuses to run in production without `--force`.
-- **SEO**: per-page title/description/canonical/Open Graph/Twitter tags, JSON-LD (SoftwareApplication), `robots.txt` and `sitemap.xml` generated at build from `VITE_SITE_URL`, favicon set, 1200×630 social card (`server/scripts/make-brand-assets.ts`).
+<div align="center">Made by Avishka</div>

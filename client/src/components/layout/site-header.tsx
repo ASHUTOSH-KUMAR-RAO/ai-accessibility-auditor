@@ -7,6 +7,7 @@ import { Button, buttonVariants } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetDescription, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useAuth } from "@/context/auth-store"
+import { useHydrated } from "@/lib/hooks"
 import { AUTH_LINKS, PRODUCT_LINKS } from "@/lib/nav"
 import { useSignOut } from "@/lib/user"
 import { cn } from "@/lib/utils"
@@ -19,6 +20,7 @@ export function SiteHeader() {
   const [open, setOpen] = useState(false)
   const { user, status } = useAuth()
   const signOut = useSignOut()
+  const hydrated = useHydrated()
   const close = () => setOpen(false)
   const links = PRODUCT_LINKS.filter((l) => l.to !== "/#faq")
 
@@ -39,14 +41,14 @@ export function SiteHeader() {
 
         <div className="flex items-center gap-2 sm:gap-3">
           <div className="hidden items-center gap-2 md:flex">
-            {status === "loading" && <Skeleton className="h-11 w-32 rounded-xl" aria-hidden="true" />}
-            {status === "authenticated" && user && (
+            {(!hydrated || status === "loading") && <Skeleton className="h-11 w-32 rounded-xl" aria-hidden="true" />}
+            {hydrated && status === "authenticated" && user && (
               <>
                 <Link to="/dashboard" className={buttonVariants({ variant: "outline", size: "sm" })}><LayoutDashboard aria-hidden="true" />Dashboard</Link>
                 <UserMenu user={user} />
               </>
             )}
-            {status === "anonymous" && (
+            {hydrated && status === "anonymous" && (
               <>
                 <Link to="/login" className={buttonVariants({ variant: "ghost", size: "sm" })}>Log in</Link>
                 <Link to="/signup" className={buttonVariants({ size: "sm" })}>Sign up</Link>

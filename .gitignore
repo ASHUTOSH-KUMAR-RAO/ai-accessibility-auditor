@@ -16,3 +16,5 @@ server/src/generated/
 
 .*.err
 .*.log
+
+client/dist-ssr/

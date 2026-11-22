@@ -1,12 +1,17 @@
 import { lazy, Suspense } from "react"
-import { BrowserRouter, Route, Routes } from "react-router-dom"
+import { Route, Routes } from "react-router-dom"
 import { PageLoader, ProtectedRoute, PublicRoute } from "@/components/auth/route-guards"
 import { CookieNotice } from "@/components/cookie-notice"
 import { AppLayout } from "@/components/layout/app-layout"
 import { AppShell } from "@/components/layout/app-shell"
 
 // Route-level code splitting: each page (and its heavy deps) loads on demand.
-import Home from "@/pages/home" // the landing page is the first screen for most visitors: no extra request chain
+// The public pages are imported directly (not lazily) so the build-time prerender can render them and visitors get no extra request chain.
+import Features from "@/pages/features"
+import Home from "@/pages/home"
+import { Cookies, Privacy, Terms } from "@/pages/legal"
+import SampleReport from "@/pages/sample"
+import { NotFound } from "@/pages/simple-pages"
 const Login = lazy(() => import("@/pages/login"))
 const Signup = lazy(() => import("@/pages/signup"))
 const Dashboard = lazy(() => import("@/pages/dashboard"))
@@ -17,16 +22,10 @@ const ComparePage = lazy(() => import("@/pages/compare"))
 const PublicReport = lazy(() => import("@/pages/public-report"))
 const History = lazy(() => import("@/pages/history"))
 const AuthLayout = lazy(() => import("@/components/auth/auth-layout").then((m) => ({ default: m.AuthLayout })))
-const NotFound = lazy(() => import("@/pages/simple-pages").then((m) => ({ default: m.NotFound })))
-const Features = lazy(() => import("@/pages/features"))
-const SampleReport = lazy(() => import("@/pages/sample"))
-const Privacy = lazy(() => import("@/pages/legal").then((m) => ({ default: m.Privacy })))
-const Terms = lazy(() => import("@/pages/legal").then((m) => ({ default: m.Terms })))
-const Cookies = lazy(() => import("@/pages/legal").then((m) => ({ default: m.Cookies })))
 
-export default function App() {
+export function AppRoutes() {
   return (
-    <BrowserRouter>
+    <>
       <Suspense fallback={<PageLoader />}>
         <Routes>
           {/* Auth pages: no site header/footer */}
@@ -65,6 +64,6 @@ export default function App() {
         </Routes>
       </Suspense>
       <CookieNotice />
-    </BrowserRouter>
+    </>
   )
 }

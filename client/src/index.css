@@ -362,3 +362,8 @@ body::after {
 @media (prefers-reduced-motion: reduce) {
   .braille-on { --breathe: 1.07; animation-duration: 0.8s, 2.6s; }
 }
+
+/* Clipped text (truncate) must also clip the screen-reader-only spans inside it: they are absolutely positioned, and an
+   absolutely positioned child escapes an overflow:hidden parent unless that parent is itself positioned. Without this
+   they stretch the page sideways. */
+.truncate { position: relative; }

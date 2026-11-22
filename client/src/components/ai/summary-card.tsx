@@ -36,7 +36,8 @@ export function AiSummaryCard({ report }: { report: Report }) {
   const failed = (stored.isError || generate.isError) && !data
   const retry = () => (stored.isError ? void stored.refetch() : generate.mutate(false))
 
-  if (readOnly && !data) return null // a shared report only shows a summary that already exists
+  // A shared report only shows a summary that already exists: nothing at all if there is none (but hold the space while we find out)
+  if (readOnly && !data && !stored.isPending) return null
 
   return (
     <section aria-labelledby="ai-summary-heading" aria-busy={busy} className={`space-y-5 rounded-3xl border border-border bg-card/90 p-6 shadow-soft sm:p-8 ${readOnly && stored.isPending ? "min-h-[111rem] md:min-h-[62rem] lg:min-h-[45rem]" : ""}`}>

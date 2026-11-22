@@ -53,3 +53,7 @@ export async function copyText(text: string): Promise<boolean> {
     return ok
   }
 }
+
+/** false on the server and during hydration, true afterwards: for UI that depends on browser-only state (session, theme). */
+const subscribe = () => () => {}
+export const useHydrated = () => useSyncExternalStore(subscribe, () => true, () => false)

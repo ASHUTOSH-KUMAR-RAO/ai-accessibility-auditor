@@ -1,7 +1,7 @@
 import { createServer } from "node:http"
 import { app } from "./app.js"
 import { env } from "./config/env.js"
-import { connectDb, prisma } from "./services/prisma.js"
+import { connectDb, disconnectDb } from "./services/prisma.js"
 import { closeRealtime, initRealtime } from "./services/realtime.js"
 import { closeBrowser } from "./services/scanner/browser.js"
 import { purgeDeletedScans } from "./services/scan.service.js"
@@ -32,7 +32,7 @@ async function shutdown(signal: string) {
   await scanWorker.stop(10_000) // let running scans finish, else hand them back to the queue
   await closeRealtime()
   await closeBrowser()
-  await prisma.$disconnect().catch(() => {})
+  await disconnectDb().catch(() => {})
   process.exit(0)
 }
 process.on("SIGTERM", () => void shutdown("SIGTERM"))

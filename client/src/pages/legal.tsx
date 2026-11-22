@@ -1,11 +1,12 @@
 import { Link } from "react-router-dom"
 import { H2, LegalPage } from "@/components/pages/legal-page"
+import { ROUTE_META } from "@/lib/seo-routes"
 
 // These pages describe what the application actually does. If the behaviour changes, change the text.
 
 export function Privacy() {
   return (
-    <LegalPage title="Privacy policy" path="/privacy" description="What AccessLens stores, what it sends to its AI provider, how share links work and how to delete your data.">
+    <LegalPage {...ROUTE_META.privacy}>
       <p>This page explains, in plain words, what data AccessLens handles when you use it.</p>
 
       <H2>What we store</H2>
@@ -44,7 +45,7 @@ export function Privacy() {
 
 export function Terms() {
   return (
-    <LegalPage title="Terms of service" path="/terms" description="The rules for using AccessLens: acceptable use, scanning only sites you may test, AI output, limits and liability.">
+    <LegalPage {...ROUTE_META.terms}>
       <p>By creating an account or using AccessLens you agree to these terms. They are short on purpose.</p>
 
       <H2>What AccessLens is</H2>
@@ -87,7 +88,7 @@ const STORAGE: Array<{ name: string; kind: string; purpose: string; lifetime: st
 
 export function Cookies() {
   return (
-    <LegalPage title="Cookies and storage" path="/cookies" description="The essential cookie and browser storage keys AccessLens uses. No advertising, no analytics, no tracking.">
+    <LegalPage {...ROUTE_META.cookies}>
       <p>AccessLens uses only what it needs to work. There are <strong>no advertising cookies, no analytics and no tracking</strong>, so there is nothing to opt out of. If your browser blocks storage, the site still works, but you will not stay signed in and your choices will not be remembered.</p>
       <div className="relative overflow-x-auto rounded-2xl border border-border bg-card/90" tabIndex={0} role="region" aria-label="Cookies and storage keys, scrolls sideways on small screens">
         <table className="w-full min-w-[40rem] border-collapse text-left text-base">

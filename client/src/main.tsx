@@ -1,41 +1,26 @@
 import { StrictMode } from "react"
-import { createRoot } from "react-dom/client"
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import App from "./App.tsx"
-import { ErrorBoundary } from "@/components/error-boundary"
-import { AuthProvider } from "@/context/auth-context"
-import { ScanRealtime } from "@/components/scans/scan-realtime"
-import { Toaster } from "@/components/ui/sonner"
-import { TooltipProvider } from "@/components/ui/tooltip"
-import { ApiError } from "@/lib/api"
-import { ThemeProvider } from "@/lib/theme"
+import { createRoot, hydrateRoot } from "react-dom/client"
+import { BrowserRouter } from "react-router-dom"
+import { AppRoutes } from "./app-routes.tsx"
+import { Providers } from "./providers.tsx"
 import "./index.css"
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 30_000,
-      refetchOnWindowFocus: false,
-      // Don't retry client errors (4xx); retry transient failures twice.
-      retry: (count, err) => !(err instanceof ApiError && err.status && err.status < 500) && count < 2,
-    },
-  },
-})
-
-createRoot(document.getElementById("root")!).render(
+const tree = (
   <StrictMode>
-    <ThemeProvider>
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider delay={200}>
-          <ErrorBoundary>
-            <AuthProvider>
-              <ScanRealtime />
-              <App />
-            </AuthProvider>
-          </ErrorBoundary>
-          <Toaster position="bottom-right" />
-        </TooltipProvider>
-      </QueryClientProvider>
-    </ThemeProvider>
-  </StrictMode>,
+    <Providers>
+      <BrowserRouter>
+        <AppRoutes />
+      </BrowserRouter>
+    </Providers>
+  </StrictMode>
 )
+
+const root = document.getElementById("root")!
+// Public pages ship as prerendered HTML (see scripts/prerender.mjs): React takes that markup over instead of rebuilding it.
+// Every other URL gets the empty app shell. If markup for a different page ever lands here, it is discarded, not hydrated.
+if (root.dataset.prerendered === location.pathname.replace(/\/$/, "") || (root.dataset.prerendered === "/" && location.pathname === "/")) {
+  hydrateRoot(root, tree)
+} else {
+  root.replaceChildren()
+  createRoot(root).render(tree)
+}

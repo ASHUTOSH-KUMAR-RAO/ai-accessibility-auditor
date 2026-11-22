@@ -8,6 +8,7 @@ import { get } from "@/lib/api"
 import type { Report } from "@/lib/report"
 import { ReportSourceCtx } from "@/lib/report-source"
 import { useSeo } from "@/lib/seo"
+import { ROUTE_META } from "@/lib/seo-routes"
 
 const ReportBody = lazy(() => import("@/components/report/report-view").then((m) => ({ default: m.ReportBody })))
 // Absolute: relative URLs would be prefixed with the API base by the HTTP client
@@ -15,7 +16,7 @@ const REPORT_URL = () => new URL("/demo/report.json", window.location.origin).hr
 
 /** A frozen, real report of W3C's deliberately inaccessible demo page. Static files only: no login, no server calls. */
 export default function SampleReport() {
-  useSeo({ title: "Sample accessibility report", description: "Explore a real AccessLens report without an account: issue map, vision simulator, keyboard path and AI fixes for a deliberately inaccessible page.", path: "/sample" })
+  useSeo(ROUTE_META.sample)
   const q = useQuery({ queryKey: ["demo-report"], staleTime: Infinity, retry: 1, queryFn: () => get<{ report: Report }>(REPORT_URL()) })
 
   // min-height: the report grows as its parts load, and the footer must not jump up and down while it does

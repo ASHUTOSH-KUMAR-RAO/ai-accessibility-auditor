@@ -6,6 +6,7 @@ import { Reveal } from "@/components/landing/reveal"
 import { buttonVariants } from "@/components/ui/button"
 import { useAuth } from "@/context/auth-store"
 import { useSeo } from "@/lib/seo"
+import { ROUTE_META } from "@/lib/seo-routes"
 
 interface Feature { id: string; icon: LucideIcon; title: string; lead: string; points: string[] }
 const FEATURES: Feature[] = [
@@ -22,7 +23,7 @@ const FEATURES: Feature[] = [
 
 export default function Features() {
   const { status } = useAuth()
-  useSeo({ title: "Features", description: "WCAG scanning, verified AI fixes, a screenshot issue map, vision simulator, keyboard tab-order map, PDF reports, share links, comparisons and trends.", path: "/features" })
+  useSeo(ROUTE_META.features)
   return (
     <div className="container-page py-12 sm:py-16">
       <Reveal className="max-w-3xl">
