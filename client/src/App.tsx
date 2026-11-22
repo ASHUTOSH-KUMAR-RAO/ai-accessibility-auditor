@@ -10,6 +10,10 @@ const Login = lazy(() => import("@/pages/login"))
 const Signup = lazy(() => import("@/pages/signup"))
 const Dashboard = lazy(() => import("@/pages/dashboard"))
 const ScanPage = lazy(() => import("@/pages/scan"))
+const Sites = lazy(() => import("@/pages/sites"))
+const SitePage = lazy(() => import("@/pages/site"))
+const ComparePage = lazy(() => import("@/pages/compare"))
+const PublicReport = lazy(() => import("@/pages/public-report"))
 const History = lazy(() => import("@/pages/history"))
 const AuthLayout = lazy(() => import("@/components/auth/auth-layout").then((m) => ({ default: m.AuthLayout })))
 const NotFound = lazy(() => import("@/pages/simple-pages").then((m) => ({ default: m.NotFound })))
@@ -28,12 +32,18 @@ export default function App() {
             </Route>
           </Route>
 
+          {/* Shared reports: no account, no app chrome */}
+          <Route path="/r/:token" element={<PublicReport />} />
+
           <Route element={<AppLayout />}>
             <Route index element={<Home />} />
             <Route element={<ProtectedRoute />}>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/scans" element={<History />} />
               <Route path="/scans/:id" element={<ScanPage />} />
+              <Route path="/sites" element={<Sites />} />
+              <Route path="/sites/:host" element={<SitePage />} />
+              <Route path="/compare" element={<ComparePage />} />
             </Route>
             {PLACEHOLDER_ROUTES.map((r) => (
               <Route key={r.to} path={r.to} element={<ComingSoon />} />

@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { ApiError, get, post, refreshAccessToken, type ApiEnvelope } from "@/lib/api"
 import type { Criterion } from "@/lib/report"
+import { scanBase, useReportSource } from "@/lib/report-source"
 import { session } from "@/lib/session"
 
 // ───────────── Types (mirror server/src/services/ai) ─────────────
@@ -162,6 +163,7 @@ export type FixState =
 /** One element's AI fix: streams it, remembers finished fixes (so stepping back and forth is instant) and can be cancelled. */
 export function useAiFix(scanId: string, issueId: string | null) {
   const qc = useQueryClient()
+  const source = useReportSource()
   const [state, setState] = useState<FixState>({ status: "idle" })
   const abort = useRef<AbortController | null>(null)
 
@@ -175,6 +177,16 @@ export function useAiFix(scanId: string, issueId: string | null) {
     abort.current = ac
     let text = ""
     setState({ status: "loading", text: "", generating: false })
+    if (source.readOnly) {
+      // Shared report: only fixes that were already saved. Nothing is generated, nothing costs anything.
+      get<{ fix: AiFix }>(`${source.base}/issues/${issueId}/ai-fix`)
+        .then(({ fix }) => {
+          qc.setQueryData(ak.fix(issueId), fix)
+          setState({ status: "done", fix, streamed: false })
+        })
+        .catch((err: unknown) => setState({ status: "error", message: err instanceof ApiError && err.status === 404 ? "No AI fix has been saved for this element." : "Couldn't load the saved fix.", code: err instanceof ApiError ? err.code : "UNKNOWN" }))
+      return
+    }
     streamFix(scanId, issueId, {
       signal: ac.signal,
       onStatus: () => setState({ status: "loading", text, generating: true }),
@@ -193,7 +205,7 @@ export function useAiFix(scanId: string, issueId: string | null) {
         const code = err instanceof ApiError || err instanceof AiRequestError ? err.code : "UNKNOWN"
         setState({ status: "error", message: err instanceof Error ? err.message : "Something went wrong.", code })
       })
-  }, [qc, scanId, issueId])
+  }, [qc, scanId, issueId, source])
 
   const cancel = useCallback(() => {
     abort.current?.abort()
@@ -216,16 +228,17 @@ export const useFixFeedback = (fixId: string) =>
 // ───────────── Summary ─────────────
 export function useAiSummary(scanId: string) {
   const qc = useQueryClient()
+  const base = scanBase(useReportSource(), scanId)
   const stored = useQuery({
-    queryKey: ak.summary(scanId),
+    queryKey: [...ak.summary(scanId), base],
     staleTime: Infinity,
     retry: false,
-    queryFn: async () => (await get<{ summary: AiSummary | null }>(`/scans/${scanId}/ai-summary`)).summary,
+    queryFn: async () => (await get<{ summary: AiSummary | null }>(`${base}/ai-summary`)).summary,
   })
   const generate = useMutation({
     mutationFn: async (regenerate: boolean) => (await post<{ summary: AiSummary }>(`/scans/${scanId}/ai-summary`, { regenerate })).summary,
     onSuccess: (summary) => {
-      qc.setQueryData(ak.summary(scanId), summary)
+      qc.setQueryData([...ak.summary(scanId), base], summary)
       void qc.invalidateQueries({ queryKey: ak.status })
     },
   })

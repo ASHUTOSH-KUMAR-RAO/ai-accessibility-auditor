@@ -147,3 +147,14 @@ API responses always use `{ success, message, data, error }`.
 - Config: `GROQ_API_KEY`, `GROQ_MODEL_FAST` (default `openai/gpt-oss-20b`), `GROQ_MODEL_SMART` (`openai/gpt-oss-120b`), `AI_TIMEOUT_MS`. Leave the key empty for guided-only mode.
 
 Screenshots: `docs/screenshots/phase5-*.webp`.
+
+## Phase 6: Smart features
+
+- **Vision simulator** (screenshot panel → "Vision simulator"): protanopia, deuteranopia, tritanopia (Machado et al. 2009 matrices), achromatopsia, low-vision blur and cataract-like haze. SVG `feColorMatrix` filters run in the browser (the matrices are defined for linear RGB, which is the SVG filter default). Simulated / slider / side-by-side.
+- **Keyboard tab-order map** (report → "Keyboard"): the scanner presses Tab (max 100 stops, 8 s budget) after axe and the screenshot and stores the order with the scan (`Scan.tabOrder`). Warnings: focus jumps, invisible focus, focus dropped (`onfocus="blur()"`), off-screen focus, keyboard traps, interactive elements Tab can't reach. Older scans show "Not available".
+- **PDF report** `GET /api/scans/:id/report.pdf`: self-contained HTML (data: URIs only) → Chromium `page.pdf` with JavaScript off and every request aborted; tagged, bookmarked, real text. Uses saved AI fixes only, never calls the AI. Cached per scan; the fingerprint changes when a fix or summary changes.
+- **Share links** `POST /api/scans/:id/shares`: 256-bit token (only its SHA-256 is stored, shown once), expiry 24 h / 7 d / 30 d / never, optional hidden screenshot, revoke any time, max 10 active per scan. Public, read-only API under `/api/public/:token/*` and page `/r/:token` (noindex, no-referrer, rate limited, no owner data, saved AI fixes only).
+- **Compare + sites**: `GET /api/compare?a=&b=` matches issues by fingerprint (rule + normalised selector + markup hash, then moved / changed / fuzzy matching). `/compare`, `/sites`, `/sites/:host` (score trend with a data table).
+- **Exports + badge**: `GET /api/scans/:id/export.csv|json?rules=` (CSV is formula-injection safe), `GET /api/badge/:token.svg` (works only while the link is active).
+
+Screenshots: `docs/screenshots/phase6-*.webp`. Client unit tests: `cd client && npm test`.

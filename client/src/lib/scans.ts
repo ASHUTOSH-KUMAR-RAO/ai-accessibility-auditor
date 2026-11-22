@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { api, ApiError, get, post, type ApiEnvelope } from "@/lib/api"
+import { useReportSource, scanBase } from "@/lib/report-source"
 import { useSocketConnected } from "@/lib/socket"
 
 export type ScanStatus = "QUEUED" | "RUNNING" | "COMPLETED" | "FAILED" | "CANCELLED"
@@ -120,13 +121,14 @@ export function useCancelScan() {
 
 /** The screenshot endpoint needs the bearer token, so an <img src> can't call it: fetch as a blob instead. */
 export function useScreenshotBlob(id: string, enabled: boolean) {
+  const base = scanBase(useReportSource(), id)
   return useQuery({
-    queryKey: qk.screenshot(id),
+    queryKey: [...qk.screenshot(id), base],
     enabled,
     staleTime: Infinity,
     gcTime: 10 * 60_000,
     retry: false,
-    queryFn: async () => (await api.get<Blob>(`/scans/${id}/screenshot`, { responseType: "blob" })).data,
+    queryFn: async () => (await api.get<Blob>(`${base}/screenshot`, { responseType: "blob" })).data,
   })
 }
 

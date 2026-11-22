@@ -7,6 +7,8 @@ import type { Report } from "@/lib/report"
 import { filterRules, useReportFilters } from "@/lib/report-filters"
 import { IssueFilterBar } from "./issue-filters"
 import { RuleCard } from "./rule-card"
+import { ExportButtons } from "./export-buttons"
+import { useReportSource } from "@/lib/report-source"
 import { ViewerPanel } from "./viewer-panel"
 import { useViewer } from "./viewer-store"
 
@@ -16,6 +18,7 @@ export function IssuesTab({ report }: { report: Report }) {
   const { reduced } = useMotionScale()
   const visible = useMemo(() => filterRules(report.rules, filters), [report.rules, filters])
   const markerById = useMemo(() => new Map(report.markers.map((m) => [m.id, m])), [report.markers])
+  const { readOnly } = useReportSource()
   const [open, setOpen] = useState<string[]>(() => (report.rules[0] ? [report.rules[0].id] : []))
 
   // A marker was clicked on the screenshot: make sure its rule is shown and open, and bring the card into view
@@ -49,6 +52,13 @@ export function IssuesTab({ report }: { report: Report }) {
       <div className="min-w-0 space-y-5">
         <h2 className="sr-only">Issues</h2>
         <IssueFilterBar report={report} filters={filters} active={active} shown={visible.length} onChange={update} onReset={reset} />
+
+        {!readOnly && (
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="text-sm font-semibold">Export the {active ? "filtered " : ""}issues</span>
+            <ExportButtons scanId={report.scan.id} kinds={["csv", "json"]} ruleIds={active ? visible.map((r) => r.id) : undefined} />
+          </div>
+        )}
 
         {report.screenshot && (
           <Button variant="outline" className="lg:hidden" onClick={() => setSheetOpen(true)}><ScanEye aria-hidden="true" />Open screenshot viewer</Button>

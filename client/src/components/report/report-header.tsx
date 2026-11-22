@@ -1,13 +1,16 @@
 import { useState } from "react"
-import { CalendarClock, ExternalLink, Globe, Loader2, Monitor, RotateCw, Smartphone, Timer, Trash2 } from "lucide-react"
-import { useNavigate } from "react-router-dom"
+import { GitCompareArrows, History, Share2, CalendarClock, ExternalLink, Globe, Loader2, Monitor, RotateCw, Smartphone, Timer, Trash2 } from "lucide-react"
+import { Link, useNavigate } from "react-router-dom"
 import { toast } from "sonner"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import { ApiError } from "@/lib/api"
 import { useRescan, type Report } from "@/lib/report"
 import { formatDuration } from "@/lib/time"
 import { hostOf } from "@/lib/url"
 import { DeleteScanDialog } from "./delete-scan-dialog"
+import { ExportButtons } from "./export-buttons"
+import { ShareDialog } from "./share-dialog"
+import { useSite } from "@/lib/insights"
 
 const dateFmt = new Intl.DateTimeFormat("en", { dateStyle: "medium", timeStyle: "short" })
 
@@ -16,10 +19,18 @@ export function ReportHeader({ report }: { report: Report }) {
   const navigate = useNavigate()
   const rescan = useRescan()
   const [confirm, setConfirm] = useState(false)
+  const [sharing, setSharing] = useState(false)
   const url = scan.finalUrl ?? scan.url
   const title = scan.pageTitle || hostOf(url)
   const Device = scan.viewport === "MOBILE" ? Smartphone : Monitor
   const when = scan.completedAt ?? scan.createdAt
+  const host = (() => { try { return new URL(url).hostname } catch { return "" } })()
+  const site = useSite(host)
+  const previous = (() => {
+    const list = site.data?.scans ?? []
+    const i = list.findIndex((s) => s.id === scan.id)
+    return i > 0 ? list[i - 1] : null
+  })()
 
   return (
     <header className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
@@ -47,8 +58,17 @@ export function ReportHeader({ report }: { report: Report }) {
         >
           {rescan.isPending ? <Loader2 className="animate-spin" aria-hidden="true" /> : <RotateCw aria-hidden="true" />}Re-scan
         </Button>
+        <Button variant="outline" onClick={() => setSharing(true)}><Share2 aria-hidden="true" />Share</Button>
+        <ExportButtons scanId={scan.id} kinds={["pdf"]} size="default" />
         <Button variant="outline" onClick={() => setConfirm(true)}><Trash2 aria-hidden="true" />Delete</Button>
+        {(previous || (site.data?.scans.length ?? 0) > 0) && (
+          <div className="flex basis-full flex-wrap gap-3">
+            {previous && <Link to={`/compare?a=${previous.id}&b=${scan.id}`} className={buttonVariants({ variant: "outline" })}><GitCompareArrows aria-hidden="true" />Compare with previous scan</Link>}
+            {host && (site.data?.scans.length ?? 0) > 1 && <Link to={`/sites/${host}`} className={buttonVariants({ variant: "outline" })}><History aria-hidden="true" />Score trend for {host}</Link>}
+          </div>
+        )}
       </div>
+      <ShareDialog scanId={scan.id} open={sharing} onOpenChange={setSharing} />
 
       <DeleteScanDialog scanId={scan.id} label={title} open={confirm} onOpenChange={setConfirm} onDeleted={() => navigate("/scans")} />
     </header>

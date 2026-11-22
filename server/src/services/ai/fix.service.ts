@@ -140,6 +140,13 @@ function toResult(row: AiFix, issue: FixIssue, cached: boolean, fallbackReason: 
   }
 }
 
+/** A saved answer for this element, if one exists. Never calls the AI and never spends budget. */
+export async function peekFix(issue: FixIssue): Promise<FixResult | null> {
+  const p = prepare(issue)
+  const row = await prisma.aiFix.findUnique({ where: { cacheKey: cacheKey(issue.ruleId, p.html, p.failureSummary) } })
+  return row ? toResult(row, issue, true, null) : null
+}
+
 export interface GenerateOptions {
   signal: AbortSignal
   /** decoded pieces of the explanation as the model writes it */

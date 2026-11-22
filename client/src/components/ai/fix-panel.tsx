@@ -9,6 +9,7 @@ import { useAiFix, type AiFix, type FixState } from "@/lib/ai"
 import { useIsDesktop } from "@/lib/hooks"
 import { useMotionScale } from "@/lib/motion"
 import { useRuleNodes, type Report } from "@/lib/report"
+import { useReportSource } from "@/lib/report-source"
 import { linkify } from "@/lib/safe-text"
 import { cn } from "@/lib/utils"
 import { ConfidenceBadge, DegradedHint, RateLimitNotice, Sparkle, SourceBadge, VerificationBadge } from "./ai-badges"
@@ -159,6 +160,7 @@ function Body({ report, target, onTarget }: { report: Report; target: FixTarget;
   const node = nodes[index]
   const { state, run, cancel } = useAiFix(scanId, node?.id ?? null)
   const announcement = announce(state)
+  const { readOnly } = useReportSource()
   const total = q.hasNextPage ? `${nodes.length}+` : String(nodes.length)
 
   const go = async (delta: -1 | 1) => {
@@ -243,7 +245,7 @@ function Body({ report, target, onTarget }: { report: Report; target: FixTarget;
           </Tabs>
         )}
 
-        {state.status === "done" && <FixFeedback key={state.fix.id} fixId={state.fix.id} />}
+        {state.status === "done" && !readOnly && <FixFeedback key={state.fix.id} fixId={state.fix.id} />}
       </div>
     </>
   )

@@ -7,6 +7,7 @@ import { abortKind, ScanCancelled, ScanError } from "./errors.js"
 import { EGRESS_REFUSED_HEADER, startEgressProxy, type EgressStats } from "./egress-proxy.js"
 import type { StoredPassed, StoredReview } from "../report/types.js"
 import type { Guard } from "./ssrf.js"
+import { recordTabOrder, type TabOrder } from "./tab-order.js"
 
 export const STAGES = {
   check: "Checking URL",
@@ -50,6 +51,8 @@ export interface PageScanResult {
   /** axe passes (id + help only) */
   passed: StoredPassed[]
   blockedRequests: number
+  /** Keyboard focus order; null if recording failed (never fails the scan) */
+  tabOrder: TabOrder | null
 }
 
 export interface ScanPageOptions {
@@ -161,6 +164,11 @@ export async function scanPage(opts: ScanPageOptions): Promise<PageScanResult> {
       return null
     })
     const favicon = await fetchFavicon(page, context, guard)
+    // Keyboard walk comes last: pressing Tab must not influence axe or the screenshot. It is best effort.
+    const tabOrder = await recordTabOrder(page, { signal }).catch((err) => {
+      logger.warn("Keyboard recording failed; continuing without it", { reason: (err as Error).message })
+      return null
+    })
     await onStage(90, STAGES.shot)
 
     assertHealthy(state, page)
@@ -175,6 +183,7 @@ export async function scanPage(opts: ScanPageOptions): Promise<PageScanResult> {
       review,
       passed,
       blockedRequests: state.blockedRequests,
+      tabOrder,
     }
   } catch (err) {
     throw mapFailure(err, state, signal)

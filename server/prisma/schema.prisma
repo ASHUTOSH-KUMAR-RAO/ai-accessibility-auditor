@@ -60,6 +60,8 @@ model Scan {
   user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   url             String
   normalizedUrl   String
+  /// hostname of normalizedUrl: groups scans by site
+  host            String      @default("")
   finalUrl        String?
   status          ScanStatus  @default(QUEUED)
   progress        Int         @default(0)
@@ -89,6 +91,8 @@ model Scan {
   /// axe passes: {id, help, tags}[]
   passedRules     Json        @default("[]")
   /// Soft delete: hidden everywhere, but the row still counts toward the hourly scan limit until purged.
+  /// Keyboard tab-order recording (see services/scanner/tab-order.ts). null = scan predates it / recording failed.
+  tabOrder        Json?
   deletedAt       DateTime?
   createdAt       DateTime    @default(now())
   startedAt       DateTime?
@@ -96,9 +100,12 @@ model Scan {
   issues          Issue[]
   screenshot      ScanScreenshot?
   aiSummary       AiSummary?
+  shares          ShareLink[]
+  pdf             ReportPdf?
 
   @@index([userId, createdAt])
   @@index([userId, deletedAt, createdAt])
+  @@index([userId, host, createdAt])
   @@index([status, createdAt])
 }
 
@@ -190,4 +197,29 @@ model AiUsage {
   createdAt DateTime @default(now())
 
   @@index([userId, createdAt])
+}
+
+/// Read-only public link. Only the SHA-256 of the token is stored, so a database leak cannot reveal live links.
+model ShareLink {
+  id             String    @id @default(uuid()) @db.Uuid
+  scanId         String    @db.Uuid
+  scan           Scan      @relation(fields: [scanId], references: [id], onDelete: Cascade)
+  tokenHash      String    @unique
+  expiresAt      DateTime?
+  hideScreenshot Boolean   @default(false)
+  revokedAt      DateTime?
+  views          Int       @default(0)
+  lastViewedAt   DateTime?
+  createdAt      DateTime  @default(now())
+
+  @@index([scanId])
+}
+
+/// Generated PDF per scan. `fingerprint` hashes everything the PDF shows, so a changed AI fix/summary regenerates it.
+model ReportPdf {
+  scanId      String   @id @db.Uuid
+  scan        Scan     @relation(fields: [scanId], references: [id], onDelete: Cascade)
+  fingerprint String
+  data        Bytes
+  createdAt   DateTime @default(now())
 }

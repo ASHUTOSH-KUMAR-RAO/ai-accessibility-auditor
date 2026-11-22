@@ -3,7 +3,7 @@ import { useSearchParams } from "react-router-dom"
 import type { PrincipleOrOther, ReportRule, RuleLevel } from "@/lib/report"
 import { SEVERITIES, severityRank, type Severity } from "@/lib/severity"
 
-export type ReportTab = "issues" | "review" | "passed"
+export type ReportTab = "issues" | "review" | "passed" | "keyboard"
 export type IssueSort = "severity" | "elements"
 
 export interface IssueFilters {
@@ -16,7 +16,7 @@ export interface IssueFilters {
 
 const PRINCIPLES = ["perceivable", "operable", "understandable", "robust", "best-practice"] as const
 const LEVELS = ["A", "AA", "best-practice"] as const
-const TABS = ["issues", "review", "passed"] as const
+const TABS = ["issues", "review", "passed", "keyboard"] as const
 
 const oneOf = <T extends string>(allowed: readonly T[], v: string | null): T | null => (v && (allowed as readonly string[]).includes(v) ? (v as T) : null)
 

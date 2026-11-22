@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useAiFixPanel } from "@/components/ai/fix-context"
 import { useMotionScale } from "@/lib/motion"
+import { useReportSource } from "@/lib/report-source"
 import { useRuleNodes, type Marker, type ReportRule, type RuleNode } from "@/lib/report"
 import { SEVERITY } from "@/lib/severity"
 import { parseFailureSummary } from "@/lib/failure-summary"
@@ -40,6 +41,7 @@ function FailureChecklist({ summary }: { summary: string }) {
 function NodeRow({ node, marker, rule, index, total }: { node: RuleNode; marker: Marker | undefined; rule: ReportRule; index: number; total: number }) {
   const { selectedId, showOnPage } = useViewer()
   const { openNode } = useAiFixPanel()
+  const { readOnly } = useReportSource()
   const selected = selectedId === node.id
   const meta = SEVERITY[rule.impact]
   const label = `element ${index + 1} of ${total}`
@@ -70,8 +72,8 @@ function NodeRow({ node, marker, rule, index, total }: { node: RuleNode; marker:
         <Button variant="outline" size="sm" disabled={!marker} onClick={() => showOnPage(node.id)} aria-label={`Show on page: ${label}`}>
           <Crosshair aria-hidden="true" />Show on page
         </Button>
-        <Button variant="outline" size="sm" onClick={() => openNode(rule.id, node.id)} aria-label={`AI fix for ${label}`}>
-          <Sparkles aria-hidden="true" />AI fix
+        <Button variant="outline" size="sm" onClick={() => openNode(rule.id, node.id)} aria-label={`${readOnly ? "View AI fix" : "AI fix"} for ${label}`}>
+          <Sparkles aria-hidden="true" />{readOnly ? "View AI fix" : "AI fix"}
         </Button>
       </div>
     </div>

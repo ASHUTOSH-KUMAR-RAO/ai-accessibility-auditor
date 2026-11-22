@@ -1,6 +1,7 @@
 import { keepPreviousData, useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Brain, Eye, Hand, Keyboard, Palette, Speech, type LucideIcon } from "lucide-react"
 import { api, ApiError, get, post } from "@/lib/api"
+import { scanBase, useReportSource } from "@/lib/report-source"
 import { qk, type Scan, type ScanPage } from "@/lib/scans"
 import type { Severity } from "@/lib/severity"
 
@@ -96,12 +97,13 @@ export const useReport = (id: string, enabled: boolean) =>
 
 /** One rule's affected elements, loaded when its card is opened. */
 export function useRuleNodes(scanId: string, ruleId: string, enabled: boolean) {
+  const base = scanBase(useReportSource(), scanId)
   return useInfiniteQuery({
-    queryKey: rk.nodes(scanId, ruleId),
+    queryKey: [...rk.nodes(scanId, ruleId), base],
     enabled,
     staleTime: Infinity,
     initialPageParam: undefined as string | undefined,
-    queryFn: ({ pageParam }) => get<{ items: RuleNode[]; nextCursor: string | null }>(`/scans/${scanId}/rules/${encodeURIComponent(ruleId)}/nodes?limit=50${pageParam ? `&cursor=${pageParam}` : ""}`),
+    queryFn: ({ pageParam }) => get<{ items: RuleNode[]; nextCursor: string | null }>(`${base}/rules/${encodeURIComponent(ruleId)}/nodes?limit=50${pageParam ? `&cursor=${pageParam}` : ""}`),
     getNextPageParam: (last) => last.nextCursor ?? undefined,
   })
 }

@@ -3,6 +3,7 @@ import { Loader2, RotateCw, Sparkles, TriangleAlert, Users, Zap } from "lucide-r
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useAiSummary } from "@/lib/ai"
+import { useReportSource } from "@/lib/report-source"
 import type { Report } from "@/lib/report"
 import { DegradedHint, EffortChip, RateLimitNotice, Sparkle } from "./ai-badges"
 import { useAiFixPanel } from "./fix-context"
@@ -22,17 +23,20 @@ function SummarySkeleton() {
 export function AiSummaryCard({ report }: { report: Report }) {
   const { stored, generate } = useAiSummary(report.scan.id)
   const { openRule } = useAiFixPanel()
+  const { readOnly } = useReportSource()
   const ruleIds = new Set(report.rules.map((r) => r.id))
 
   // First visit: nothing stored yet, so create it (one AI generation, then it is saved for this scan).
   useEffect(() => {
-    if (stored.isSuccess && stored.data === null && generate.isIdle) generate.mutate(false)
-  }, [stored.isSuccess, stored.data, generate])
+    if (!readOnly && stored.isSuccess && stored.data === null && generate.isIdle) generate.mutate(false)
+  }, [readOnly, stored.isSuccess, stored.data, generate])
 
   const data = generate.data ?? stored.data ?? null
   const busy = generate.isPending
   const failed = (stored.isError || generate.isError) && !data
   const retry = () => (stored.isError ? void stored.refetch() : generate.mutate(false))
+
+  if (readOnly && !data) return null // a shared report only shows a summary that already exists
 
   return (
     <section aria-labelledby="ai-summary-heading" aria-busy={busy} className="space-y-5 rounded-3xl border border-border bg-card/90 p-6 shadow-soft sm:p-8">
@@ -47,9 +51,9 @@ export function AiSummaryCard({ report }: { report: Report }) {
             {data.cached && <span className="rounded-full bg-muted px-2.5 py-0.5 text-sm font-medium">Saved result</span>}
           </div>
         )}
-        <Button variant="outline" onClick={() => generate.mutate(true)} disabled={busy || stored.isPending || !data}>
+        {!readOnly && <Button variant="outline" onClick={() => generate.mutate(true)} disabled={busy || stored.isPending || !data}>
           {busy ? <Loader2 className="animate-spin" aria-hidden="true" /> : <RotateCw aria-hidden="true" />}Regenerate<span className="sr-only"> AI summary</span>
-        </Button>
+        </Button>}
       </div>
 
       {(stored.isPending || (busy && !data)) && <SummarySkeleton />}
@@ -81,7 +85,7 @@ export function AiSummaryCard({ report }: { report: Report }) {
                   <p className="flex-1 text-muted-foreground">{p.why}</p>
                   {p.ruleId && ruleIds.has(p.ruleId) && (
                     <Button variant="outline" size="sm" className="self-start" onClick={() => openRule(p.ruleId!)}>
-                      <Sparkles aria-hidden="true" />Fix with AI<span className="sr-only"> for {p.title}</span>
+                      <Sparkles aria-hidden="true" />{readOnly ? "View AI fix" : "Fix with AI"}<span className="sr-only"> for {p.title}</span>
                     </Button>
                   )}
                 </li>

@@ -22,6 +22,32 @@ export const loginLimiter = rateLimit({
   handler: handler("Too many sign-in attempts. Try again in 15 minutes."),
 })
 
+/** Public share links and badges: anonymous, so limited per IP. */
+export const publicLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 300,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  handler: handler("Too many requests. Please try again in a few minutes."),
+})
+export const badgeLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 600,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  handler: handler("Too many requests."),
+})
+/** PDF generation is the heaviest request: per signed-in user. */
+export const pdfLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 20,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  keyGenerator: (req) => (req as { user?: { id: string } }).user?.id ?? "anon",
+  validate: { keyGeneratorIpFallback: false },
+  handler: handler("You've created a lot of PDFs. Please try again later."),
+})
+
 export const registerLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   limit: 10,

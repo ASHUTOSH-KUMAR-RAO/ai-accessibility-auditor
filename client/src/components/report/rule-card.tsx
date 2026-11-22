@@ -4,12 +4,14 @@ import { SeverityBadge } from "@/components/brand/severity-badge"
 import { Button } from "@/components/ui/button"
 import { AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import type { Marker, ReportRule } from "@/lib/report"
+import { useReportSource } from "@/lib/report-source"
 import { NodeList } from "./node-list"
 import { CriteriaChips, LevelChips, WhoAffected } from "./wcag-chips"
 
 /** One failing rule: collapsed it shows severity, title, count and WCAG criteria; open it shows who is hurt and every element. */
 export function RuleCard({ rule, scanId, markerById }: { rule: ReportRule; scanId: string; markerById: Map<string, Marker> }) {
   const { openRule } = useAiFixPanel()
+  const { readOnly } = useReportSource()
   return (
     <AccordionItem data-rule-id={rule.id} value={rule.id} className="rounded-2xl border border-border bg-card/90 shadow-soft not-last:border-b">
       <AccordionTrigger className="items-center gap-3 rounded-2xl p-4 text-base hover:no-underline sm:p-5">
@@ -28,7 +30,7 @@ export function RuleCard({ rule, scanId, markerById }: { rule: ReportRule; scanI
         <CriteriaChips criteria={rule.criteria} />
         <LevelChips level={rule.level} principle={rule.principle} />
         <Button variant="outline" size="sm" className="sm:ml-auto" onClick={() => openRule(rule.id)}>
-          <Sparkles aria-hidden="true" />Fix with AI<span className="sr-only"> for {rule.help}</span>
+          <Sparkles aria-hidden="true" />{readOnly ? "View AI fix" : "Fix with AI"}<span className="sr-only"> for {rule.help}</span>
         </Button>
       </div>
 

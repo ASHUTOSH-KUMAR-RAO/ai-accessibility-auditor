@@ -1,3 +1,4 @@
+import type { Prisma } from "../generated/prisma/client.js"
 import { env } from "../config/env.js"
 import { logger } from "../utils/logger.js"
 import { publishScan } from "./scan-dto.js"
@@ -86,6 +87,7 @@ export async function runScan(scan: ClaimedScan, parentSignal: AbortSignal, guar
             finalUrl: page.finalUrl,
             favicon: page.favicon,
             rules: ruleSummaries,
+            tabOrder: (page.tabOrder as unknown as Prisma.InputJsonValue) ?? undefined,
             reviewItems: page.review,
             passedRules: page.passed,
             durationMs: Date.now() - started,

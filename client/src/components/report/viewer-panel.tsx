@@ -1,5 +1,5 @@
-import { lazy, Suspense } from "react"
-import { ImageOff } from "lucide-react"
+import { lazy, Suspense, useState } from "react"
+import { Glasses, ImageOff, MapPin } from "lucide-react"
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useIsDesktop, useObjectUrl } from "@/lib/hooks"
@@ -9,8 +9,12 @@ import { useViewer } from "./viewer-store"
 
 // The viewer (and its overlay logic) is only fetched when a report with a screenshot is shown
 const ScreenshotViewer = lazy(() => import("./screenshot-viewer"))
+// The vision simulator (SVG filters, explanations) only loads when someone opens it
+const VisionSimulator = lazy(() => import("./vision-simulator"))
 
 function Loaded({ report }: { report: Report }) {
+  const [view, setView] = useState<"map" | "vision">("map")
+  const [visionSeen, setVisionSeen] = useState(false)
   const shot = useScreenshotBlob(report.scan.id, !!report.screenshot)
   const src = useObjectUrl(shot.data)
   if (!report.screenshot || shot.isError) {
@@ -22,10 +26,37 @@ function Loaded({ report }: { report: Report }) {
     )
   }
   if (!src) return <Skeleton className="h-full min-h-72 w-full rounded-2xl" aria-hidden="true" />
+  const pick = (v: "map" | "vision") => {
+    setView(v)
+    if (v === "vision") setVisionSeen(true)
+  }
+  const tab = (v: "map" | "vision", label: string, Icon: typeof MapPin) => (
+    <button
+      type="button" aria-pressed={view === v} onClick={() => pick(v)}
+      className={`inline-flex min-h-10 cursor-pointer items-center gap-1.5 rounded-lg px-3 text-sm font-semibold ${view === v ? "bg-foreground text-background" : "hover:bg-accent"}`}
+    >
+      <Icon className="size-4" aria-hidden="true" />{label}
+    </button>
+  )
   return (
-    <Suspense fallback={<Skeleton className="h-full min-h-72 w-full rounded-2xl" aria-hidden="true" />}>
-      <ScreenshotViewer report={report} src={src} />
-    </Suspense>
+    <div className="flex h-full min-h-0 flex-col gap-3">
+      <div role="group" aria-label="Screenshot view" className="inline-flex self-start rounded-xl border-2 border-input p-0.5">
+        {tab("map", "Issue map", MapPin)}{tab("vision", "Vision simulator", Glasses)}
+      </div>
+      {/* Both views stay mounted once opened, so zoom and selection survive switching */}
+      <div className="min-h-0 flex-1" hidden={view !== "map"}>
+        <Suspense fallback={<Skeleton className="h-full min-h-72 w-full rounded-2xl" aria-hidden="true" />}>
+          <ScreenshotViewer report={report} src={src} />
+        </Suspense>
+      </div>
+      {visionSeen && (
+        <div className="min-h-0 flex-1 overflow-y-auto" hidden={view !== "vision"}>
+          <Suspense fallback={<Skeleton className="h-full min-h-72 w-full rounded-2xl" aria-hidden="true" />}>
+            <VisionSimulator report={report} src={src} />
+          </Suspense>
+        </div>
+      )}
+    </div>
   )
 }
 

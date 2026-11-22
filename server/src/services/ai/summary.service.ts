@@ -98,7 +98,13 @@ function toResult(row: { result: unknown; model: string; fallback: boolean; crea
 
 /** The stored summary, if any (never calls the AI). */
 export async function getSummary(userId: string, scanId: string): Promise<SummaryResult | null> {
-  const row = await prisma.aiSummary.findFirst({ where: { scanId, scan: { userId, deletedAt: null } } })
+  return summaryWhere({ scanId, scan: { userId, deletedAt: null } })
+}
+/** Same, for callers that already proved access to the scan (share link, PDF). */
+export const getSummaryForScan = (scanId: string) => summaryWhere({ scanId, scan: { deletedAt: null } })
+
+async function summaryWhere(where: { scanId: string; scan: object }): Promise<SummaryResult | null> {
+  const row = await prisma.aiSummary.findFirst({ where })
   return row ? toResult(row, true, row.fallback ? reasonNow() : null) : null
 }
 

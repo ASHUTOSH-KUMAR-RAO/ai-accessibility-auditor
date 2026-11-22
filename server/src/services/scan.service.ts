@@ -17,10 +17,12 @@ const mine = (userId: string, id?: string): Prisma.ScanWhereInput => ({ userId, 
 
 export async function createScan(userId: string, input: { url: string; viewport: "DESKTOP" | "MOBILE" }) {
   let normalized: string
+  let host: string
   try {
     const { url, normalized: n } = defaultGuard.normalize(input.url)
     defaultGuard.checkStatic(url) // instant feedback for localhost / IPs / odd ports; DNS is checked by the worker
     normalized = n
+    host = url.hostname
   } catch (err) {
     if (err instanceof ScanError) throw new AppError(err.message, 400, err.code)
     throw err
@@ -41,7 +43,7 @@ export async function createScan(userId: string, input: { url: string; viewport:
       throw new AppError(`You've reached the limit of ${env.SCAN_RATE_LIMIT_PER_HOUR} scans per hour. Please try again later.`, 429, "RATE_LIMITED")
     }
     return tx.scan.create({
-      data: { userId, url: input.url.trim().slice(0, 2048), normalizedUrl: normalized, viewport: input.viewport },
+      data: { userId, url: input.url.trim().slice(0, 2048), normalizedUrl: normalized, host, viewport: input.viewport },
       select: scanSelect,
     })
   })
@@ -102,9 +104,14 @@ export async function getScan(userId: string, id: string) {
   return toScanDto(scan)
 }
 
-export async function getReport(userId: string, id: string) {
+export const getReport = (userId: string, id: string) => reportWhere(mine(userId, id))
+
+/** For callers that already proved access some other way (share link, PDF job). */
+export const reportForScan = (id: string) => reportWhere({ id, deletedAt: null })
+
+async function reportWhere(where: Prisma.ScanWhereInput) {
   const scan = await prisma.scan.findFirst({
-    where: mine(userId, id),
+    where,
     select: {
       id: true, url: true, finalUrl: true, pageTitle: true, favicon: true, viewport: true, durationMs: true,
       createdAt: true, startedAt: true, completedAt: true, score: true, status: true,
@@ -116,7 +123,7 @@ export async function getReport(userId: string, id: string) {
   if (scan.status !== "COMPLETED") throw new AppError("This scan has no report yet.", 409, "NOT_COMPLETED")
 
   const issues = await prisma.issue.findMany({
-    where: { scanId: id },
+    where: { scanId: scan.id },
     select: { id: true, ruleId: true, impact: true, wcagTags: true, help: true, description: true, helpUrl: true, boundingBox: true, occurrenceIndex: true },
   })
   const list = <T>(v: unknown): T[] => (Array.isArray(v) ? (v as T[]) : [])
@@ -134,6 +141,10 @@ export async function getReport(userId: string, id: string) {
 
 export async function listRuleNodes(userId: string, id: string, ruleId: string, q: { limit: number; cursor?: string }) {
   await getScan(userId, id) // ownership + not deleted
+  return nodesForScan(id, ruleId, q)
+}
+
+export async function nodesForScan(id: string, ruleId: string, q: { limit: number; cursor?: string }) {
   const rows = await prisma.issue.findMany({
     where: { scanId: id, ruleId },
     orderBy: [{ occurrenceIndex: "asc" }, { id: "asc" }],
@@ -158,8 +169,11 @@ export async function listIssues(userId: string, id: string, q: { limit: number;
   return { items: page, nextCursor: rows.length > q.limit ? page[page.length - 1]!.id : null }
 }
 
-export async function getScreenshot(userId: string, id: string) {
-  const shot = await prisma.scanScreenshot.findFirst({ where: { scanId: id, scan: { userId, deletedAt: null } }, select: { data: true, mime: true } })
+export const getScreenshot = (userId: string, id: string) => screenshotWhere({ scanId: id, scan: { userId, deletedAt: null } })
+export const screenshotForScan = (id: string) => screenshotWhere({ scanId: id, scan: { deletedAt: null } })
+
+async function screenshotWhere(where: Prisma.ScanScreenshotWhereInput) {
+  const shot = await prisma.scanScreenshot.findFirst({ where, select: { data: true, mime: true } })
   if (!shot) throw new AppError("Screenshot not found", 404, "NOT_FOUND")
   return { buffer: Buffer.from(shot.data), mime: shot.mime }
 }
