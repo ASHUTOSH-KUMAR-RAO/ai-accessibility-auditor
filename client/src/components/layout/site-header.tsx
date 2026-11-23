@@ -1,5 +1,5 @@
-import { useState } from "react"
-import { Link, NavLink } from "react-router-dom"
+import { useEffect, useState } from "react"
+import { Link, NavLink, useLocation } from "react-router-dom"
 import { LayoutDashboard, LogOut, Menu } from "lucide-react"
 import { Logo } from "@/components/brand/logo"
 import { UserMenu } from "@/components/layout/user-menu"
@@ -22,6 +22,8 @@ export function SiteHeader() {
   const signOut = useSignOut()
   const hydrated = useHydrated()
   const close = () => setOpen(false)
+  const { pathname } = useLocation()
+  useEffect(() => setOpen(false), [pathname])
   const links = PRODUCT_LINKS.filter((l) => l.to !== "/#faq")
 
   return (

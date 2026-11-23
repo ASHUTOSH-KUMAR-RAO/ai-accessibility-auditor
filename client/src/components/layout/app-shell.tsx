@@ -136,6 +136,7 @@ export function AppShell() {
           <AnimatePresence mode="wait">
             <motion.div
               key={pathname}
+            transformTemplate={(_, t) => (/translateY\(0(px)?\)/.test(t) ? "none" : t)} // never leave a transform at rest: it would trap position: fixed descendants
               initial={{ opacity: 1, y: 18 * distance }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 * distance }}
               transition={{ duration: 0.35 * speed, ease: [0.22, 1, 0.36, 1] }}
             >
